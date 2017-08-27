@@ -19,6 +19,8 @@ FEAT_TO_KEEP_FOR_ML = ['h_nb_games_home', 'h_nb_victories',
 'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages',
 'home_win']
 
+FEAT_TO_KEEP_FOR_ML_DATE = FEAT_TO_KEEP_FOR_ML + ['Date']
+
 def get_season_str(filename):
     """
     This method returns a string representing the season (e.g. 2009_2010 for
@@ -258,9 +260,15 @@ if __name__=='__main__':
     # sort all data by date
     all_data = all_data.sort_values(by='Date')
     division = all_data['Div'].values[0]
+    
     all_data_ML = all_data[FEAT_TO_KEEP_FOR_ML]
     filepath_ML = ML_FOLDER + '/' + division + '_ML.csv'
     all_data_ML.to_csv(filepath_ML, index=False)
+    
+    # Include date
+    all_data_ML_date = all_data[FEAT_TO_KEEP_FOR_ML_DATE]
+    filepath_ML_date = ML_FOLDER + '/' + division + '_ML_date.csv'
+    all_data_ML_date.to_csv(filepath_ML_date, index=False)
     
     
         
