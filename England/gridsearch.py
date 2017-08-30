@@ -18,7 +18,7 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 
 FILEPATH = 'data/ML/E0_ML.csv'
 
-ML_ALGO = 'gauss_proc'
+ML_ALGO = 'log_reg'
 ALGOS = {'rdmf':RandomForestClassifier,
          'log_reg':LogisticRegression,
          'knn':KNeighborsClassifier,

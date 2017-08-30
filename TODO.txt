@@ -1,0 +1,9 @@
+Exploratory Data Analysis:
+* Plot time vs percentage_home_team_win --> should give info on whether time features are relevant or not
+
+
+Feature engineering:
+* Add relevant time features [DONE]
+* Add distance between HomeTeam and AwayTeam stadiums
+* Add payroll for HomeTeam and AwayTeam [DONE]
+* Add average home win odds
