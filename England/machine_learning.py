@@ -14,17 +14,74 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve, f1_score, precision_score, recall_score
 from sklearn.neighbors import KNeighborsClassifier
+
+
+def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
+    """
+    We define a profit multiplier as follow: 
+    It is equal to 'decimal_odd -1'. If it is positive you
+    make (decimal_odd-1) time the money you bet, 
+    otherwise it is equal to -1 and you've lost the money you bet
+
+    Parameters
+    ----------
+    y: numpy.ndarray
+        Real outcome: 1 means 'home team won' and 0 'home team lost or draw'
+    predictions: numpy.ndarray
+        Predicted outcome
+    id_strings: numpy.ndarray
+        List of ids in the same order of association as for the elements in 
+        'y' and 'predictions'
+    home_win_odds: pandas.DataFrame
+        'Home win' odds associated with each game
+
+    Returns
+    -------
+    profits_multipliers: list
+        List that contains 
+    """
+    profits_multipliers = []
+    home_win_odds.index = home_win_odds['id']
+    for i in range(len(y)):
+        pred = predictions[i]
+        real = y[i]
+        id_str = id_strings[i]
+        home_win_odd = home_win_odds.loc[id_str]['BbAvH']
+
+        # If algo thinks home team will win
+        if pred == 1:
+            # If this is indeed true, we make money
+            if pred == real:
+                profit_m = home_win_odd - 1
+                profits_multipliers.append(profit_m)
+
+            # If the decision was wrong, we loose what we bet
+            else:
+                profit_m = -1
+                profits_multipliers.append(profit_m)
+
+    return profits_multipliers
+
+
 FILEPATH = 'data/ML/E0_ML.csv'
+ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
 FEATURES_TO_KEEP = ['h_nb_games_home', 'h_season_points',
                     'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
                     'a_season_points', 'a_nb_goals_scored_away',
                     'a_nb_goals_conceded_away']
-RDMF = False
-PROBA_THRESH = 0.641432
+RDMF = True
+PROBA_THRESH = 0.6
 if __name__ == '__main__':
+    data_odds = pd.read_csv(ODDS_FILEPATH)
     data = pd.read_csv(FILEPATH)
+
+    
+
+    # store id of games
+    id_str = data['id'].values
+    data = data.drop('id', 1)
 
     # if ('Date' in set(data.columns.values)):
     #     data['Date'] = pd.to_datetime(data['Date'])
@@ -32,7 +89,7 @@ if __name__ == '__main__':
     #data = data[data['h_nb_games_total']>18]
 
     # encode categorical data
-    data = pd.get_dummies(data,columns=['Month', 'Week'])
+    data = pd.get_dummies(data, columns=['Month', 'Week'])
 
     y = data['home_win'].values
     data = data.drop('home_win', 1)
@@ -49,14 +106,27 @@ if __name__ == '__main__':
     X = standardizer.fit_transform(X)
 
     if RDMF:
-        classifier = RandomForestClassifier(
-            n_estimators=100, max_features=0.2, min_samples_leaf=10, n_jobs=-1)
+        classifier = RandomForestClassifier(n_jobs=-1)
     else:
-        classifier = LogisticRegression(C=100, n_jobs=-1)
-    proba = cross_val_predict(classifier, X, y, method='predict_proba',
-                              cv=10, n_jobs=-1)
-    proba_home_win = [p[1] for p in proba]
-    predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
+        classifier = LogisticRegression(n_jobs=-1)
+    # proba = cross_val_predict(classifier, X, y,
+    #                           method='predict_proba',
+    #                           cv=10, n_jobs=-1)
+    # proba_home_win = [p[1] for p in proba]
+    # predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
+    # auc = roc_auc_score(y, proba_home_win)
+    # fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
+
+    # coeff_tnr = 0.6
+    # coeff_tpr = 0.4
+    # tnr_plus_tpr = [coeff_tnr * (1 - fpr[i]) + coeff_tpr * tpr[i]
+    #                 for i in range(len(fpr))]
+    # index_max, max_tnr_plus_tpr = max(
+    #     enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
+    # thresholds_of_max = thresholds[index_max]
+
+    predictions = cross_val_predict(classifier, X, y,
+                                    cv=10, n_jobs=-1)
 
     acc = accuracy_score(y, predictions)
     conf_mat = confusion_matrix(y, predictions)
@@ -64,16 +134,10 @@ if __name__ == '__main__':
     prec = precision_score(y, predictions)
     recall = recall_score(y, predictions)
 
-    auc = roc_auc_score(y, proba_home_win)
-    fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
-
-    coeff_tnr = 0.6
-    coeff_tpr = 0.4
-    tnr_plus_tpr = [coeff_tnr * (1 - fpr[i]) + coeff_tpr * tpr[i]
-                    for i in range(len(fpr))]
-    index_max, max_tnr_plus_tpr = max(
-        enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
-    thresholds_of_max = thresholds[index_max]
+    profits_multipliers = get_profit_multipliers(y, predictions,
+                                                 id_str, data_odds)
+    print('Sum of multipliers: %f' % np.sum(profits_multipliers))
+    print('')
 
     print('Proba Threshold: %f' % PROBA_THRESH)
     print('Accuracy: %f' % acc)

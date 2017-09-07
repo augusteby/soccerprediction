@@ -18,9 +18,12 @@ FEAT_TO_KEEP_FOR_ML = ['h_nb_games_home', 'h_nb_victories',
                        'a_last_n_games_points', 'a_nb_goals_scored_away', 'a_mean_nb_goals_scored_away',
                        'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages',
                        'Month', 'Week',
-                       'home_win']
+                       'home_win',
+                       'id']
 
 FEAT_TO_KEEP_FOR_ML_DATE = FEAT_TO_KEEP_FOR_ML + ['Date']
+
+FEAT_TO_KEEP_HOME_WIN_ODDS = ['id', 'BbAvH']
 
 
 def get_season_str(filename):
@@ -43,10 +46,10 @@ def get_season_str(filename):
         YYYY1_YYYY2
     """
     first_split = filename.split('.')
-    championship_YYY1_YYY2 = first_split[0]
-    second_split = championship_YYY1_YYY2.split('_')
-    YYYY1 = second_split[1]
-    YYYY2 = second_split[2]
+    prep_championship_YYY1_YYY2 = first_split[0]
+    second_split = prep_championship_YYY1_YYY2.split('_')
+    YYYY1 = second_split[2]
+    YYYY2 = second_split[3]
 
     season_str = YYYY1 + '_' + YYYY2
     return season_str
@@ -315,7 +318,7 @@ def engineer_features_time(data, date_column_name):
 
     # parameters
 DATA_FOLDER = 'data'
-GAMES_FOLDER = DATA_FOLDER + '/Games'
+GAMES_FOLDER = DATA_FOLDER + '/Games/preprocessed'
 WAGES_FOLDER = DATA_FOLDER + '/Wages'
 ML_FOLDER = DATA_FOLDER + '/ML'
 N = 3  # number of previous games to consider
@@ -323,6 +326,7 @@ if __name__ == '__main__':
     all_data = pd.DataFrame()
 
     for filename in os.listdir(GAMES_FOLDER):
+        print(GAMES_FOLDER)
         print(filename)
         season_str = get_season_str(filename)
         filepath = GAMES_FOLDER + '/' + filename
@@ -358,3 +362,8 @@ if __name__ == '__main__':
     all_data_ML_date = all_data[FEAT_TO_KEEP_FOR_ML_DATE]
     filepath_ML_date = ML_FOLDER + '/' + division + '_ML_date.csv'
     all_data_ML_date.to_csv(filepath_ML_date, index=False)
+
+    # Home win odds data
+    all_data_home_win_odds = all_data[FEAT_TO_KEEP_HOME_WIN_ODDS]
+    filepath_home_win_odds = ML_FOLDER + '/' + division + '_home_win_odds.csv'
+    all_data_home_win_odds.to_csv(filepath_home_win_odds, index=False)
