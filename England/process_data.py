@@ -7,6 +7,7 @@ Created on Wed Apr  5 22:12:07 2017
 import pandas as pd
 import numpy as np
 import os
+import math as m
 
 # constants
 FEAT_TO_KEEP_FOR_ML = ['h_nb_games_home', 'h_nb_victories',
@@ -18,6 +19,7 @@ FEAT_TO_KEEP_FOR_ML = ['h_nb_games_home', 'h_nb_victories',
                        'a_last_n_games_points', 'a_nb_goals_scored_away', 'a_mean_nb_goals_scored_away',
                        'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages',
                        'Month', 'Week',
+                       'distance_km', 'capacity_home_stadium',
                        'home_win',
                        'id']
 
@@ -55,7 +57,8 @@ def get_season_str(filename):
     return season_str
 
 
-def generate_all_season_games_features(one_season, data_wages_season, n=3):
+def generate_all_season_games_features(one_season, data_wages_season,
+                                       data_stadium, n=3):
     """
     This method engineers the features of each game of one season
 
@@ -63,8 +66,10 @@ def generate_all_season_games_features(one_season, data_wages_season, n=3):
     ----------
     one_season: pandas.DataFrame
         Results of all game of the season
-    data_wages_season: pandas.DataFrale
+    data_wages_season: pandas.DataFrame
         Payroll for each club for this season
+    data_stadium: pandas.DataFrame
+        Data related to stadiums of the clubs
     n: int
         Number of previous games to take into account when calculating features
         for one game
@@ -74,6 +79,9 @@ def generate_all_season_games_features(one_season, data_wages_season, n=3):
     one_season: pandas.DataFrame
         New features and results for all games of the season
     """
+    # index stadium data with TeamName
+    data_stadium.index = data_stadium['TeamName']
+
     for index, row in one_season.iterrows():
         date = row['Date']
         home_team = row['HomeTeam']
@@ -97,22 +105,30 @@ def generate_all_season_games_features(one_season, data_wages_season, n=3):
                 one_season[res] = pd.Series()
             one_season.set_value(index, res, away_results[res])
 
-        # Team Season Wages Bill
-
         if index == 0:
             one_season['h_season_wages'] = pd.Series()
             one_season['a_season_wages'] = pd.Series()
+            one_season['distance_km'] = pd.Series()
+            one_season['capacity_home_stadium'] = pd.Series()
 
+        # Team Season Wages Bill
         home_season_wages = data_wages_season[data_wages_season[
             'TeamName'] == home_team]['WageBillPounds'].values[0]
         away_season_wages = data_wages_season[data_wages_season[
             'TeamName'] == away_team]['WageBillPounds'].values[0]
-        # print(home_team)
-        # print(home_season_wages)
-        # print(away_team)
-        # print(away_season_wages)
         one_season.set_value(index, 'h_season_wages', home_season_wages)
         one_season.set_value(index, 'a_season_wages', away_season_wages)
+
+        # Distance between two teams
+        distance_km = get_distance_between_stadiums(away_team, home_team,
+                                                    data_stadium)
+        one_season.set_value(index, 'distance_km', distance_km)
+
+        # Capacity of the stadium (can be related to how important the support
+        # of local supporter towards the home team will be)
+        capacity_home_stadium = data_stadium.loc[home_team]['Capacity']
+        one_season.set_value(index, 'capacity_home_stadium',
+                             capacity_home_stadium)
 
     # Create features related to time
     one_season = engineer_features_time(one_season, 'Date')
@@ -316,14 +332,56 @@ def engineer_features_time(data, date_column_name):
 
     return data
 
+
+def get_distance_between_stadiums(team1, team2, stadium_data):
+    """
+    The purpose of this method is to compute and return the distance between 
+    the GPS coordinates of the stadiums of two teams
+
+    Source: http://www.movable-type.co.uk/scripts/latlong.html
+
+    Parameters
+    ----------
+    team1: str
+        Name of first team
+    team2: str
+        Name of second team
+    stadium_data: pandas.DataFrame
+        Contains gps coordinates of all teams in the database indexed by 
+        TeamName
+
+    Returns
+    -------
+    distance: float
+        Distance between the stadiums of the two teams
+    """
+    lon1 = stadium_data.loc[team1]['Longitude']
+    lat1 = stadium_data.loc[team1]['Latitude']
+
+    lon2 = stadium_data.loc[team2]['Longitude']
+    lat2 = stadium_data.loc[team2]['Latitude']
+
+    R = 6371  # Radius of the Earth in km
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = (m.sin(dlat / 2) * m.sin(dlat / 2) +
+         m.sin(dlon / 2) * m.sin(dlon / 2) * m.cos(lat1) * m.cos(lat2))
+
+    c = 2 * m.atan2(m.sqrt(a), m.sqrt(1 - a))
+
+    distance = R * c
+    return distance
+
     # parameters
 DATA_FOLDER = 'data'
 GAMES_FOLDER = DATA_FOLDER + '/Games/preprocessed'
 WAGES_FOLDER = DATA_FOLDER + '/Wages'
+STADIUM_FILEPATH = DATA_FOLDER + '/Stadium/stadiums_modified2.csv'
 ML_FOLDER = DATA_FOLDER + '/ML'
 N = 3  # number of previous games to consider
 if __name__ == '__main__':
     all_data = pd.DataFrame()
+    stadium_data = pd.read_csv(STADIUM_FILEPATH)
 
     for filename in os.listdir(GAMES_FOLDER):
         print(GAMES_FOLDER)
@@ -341,6 +399,7 @@ if __name__ == '__main__':
         # generate the features of each game of the season
         one_season = generate_all_season_games_features(one_season,
                                                         data_wages_season,
+                                                        stadium_data,
                                                         n=N)
         one_season['home_win'] = one_season[
             'FTR'].apply(lambda x: 1 if x == 'H' else 0)

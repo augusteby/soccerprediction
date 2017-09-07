@@ -71,13 +71,11 @@ FEATURES_TO_KEEP = ['h_nb_games_home', 'h_season_points',
                     'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
                     'a_season_points', 'a_nb_goals_scored_away',
                     'a_nb_goals_conceded_away']
-RDMF = True
+RDMF = False
 PROBA_THRESH = 0.6
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
     data = pd.read_csv(FILEPATH)
-
-    
 
     # store id of games
     id_str = data['id'].values
@@ -89,7 +87,10 @@ if __name__ == '__main__':
     #data = data[data['h_nb_games_total']>18]
 
     # encode categorical data
-    data = pd.get_dummies(data, columns=['Month', 'Week'])
+    if 'Month' in data.columns.values:
+        data = pd.get_dummies(data, columns=['Month'])
+    if 'Week' in data.columns.values:
+        data = pd.get_dummies(data, columns=['Week'])
 
     y = data['home_win'].values
     data = data.drop('home_win', 1)
@@ -109,24 +110,21 @@ if __name__ == '__main__':
         classifier = RandomForestClassifier(n_jobs=-1)
     else:
         classifier = LogisticRegression(n_jobs=-1)
-    # proba = cross_val_predict(classifier, X, y,
-    #                           method='predict_proba',
-    #                           cv=10, n_jobs=-1)
-    # proba_home_win = [p[1] for p in proba]
-    # predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
-    # auc = roc_auc_score(y, proba_home_win)
-    # fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
+    proba = cross_val_predict(classifier, X, y,
+                              method='predict_proba',
+                              cv=10, n_jobs=-1)
+    proba_home_win = [p[1] for p in proba]
+    predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
+    auc = roc_auc_score(y, proba_home_win)
+    fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
 
-    # coeff_tnr = 0.6
-    # coeff_tpr = 0.4
-    # tnr_plus_tpr = [coeff_tnr * (1 - fpr[i]) + coeff_tpr * tpr[i]
-    #                 for i in range(len(fpr))]
-    # index_max, max_tnr_plus_tpr = max(
-    #     enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
-    # thresholds_of_max = thresholds[index_max]
-
-    predictions = cross_val_predict(classifier, X, y,
-                                    cv=10, n_jobs=-1)
+    coeff_tnr = 0.6
+    coeff_tpr = 0.4
+    tnr_plus_tpr = [coeff_tnr * (1 - fpr[i]) + coeff_tpr * tpr[i]
+                    for i in range(len(fpr))]
+    index_max, max_tnr_plus_tpr = max(
+        enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
+    thresholds_of_max = thresholds[index_max]
 
     acc = accuracy_score(y, predictions)
     conf_mat = confusion_matrix(y, predictions)

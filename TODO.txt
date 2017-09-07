@@ -1,18 +1,24 @@
 Exploratory Data Analysis:
-* Plot time vs percentage_home_team_win --> should give info on whether time features are relevant or not
+* Plot time vs percentage_home_team_win --> should give info on whether time features are relevant or not [DONE]
 * Study correlation between features for future feature selection
+
+Feature selection:
+* Select features based on their information gain vs the output
 
 
 Feature engineering:
 
 * Add relevant time features [DONE]
-* Add distance between HomeTeam and AwayTeam stadiums
+* Add distance between HomeTeam and AwayTeam stadiums [DONE]
+* Add stadium capacity (assumption: the bigger the stadium, the more important
+the support for home team: this can have an impact on the likelihood of 
+winning for home team)
 * Add payroll for HomeTeam and AwayTeam [DONE]
 * Add average home win odds
 * Model how much I would have won/lost in average 
     * Create ID for all games [DONE]
-    * Keep feature BbAvH = Betbrain average home win odds
-    * For all predictions, look at real outcome, compute income/loss
+    * Keep feature BbAvH = Betbrain average home win odds [DONE]
+    * For all predictions, look at real outcome, compute income/loss [DONE]
     * Compute mean, max, min, std income/loss
     * For LogReg compute mean-max-min-std-INCOME vs Threshold(from 0.5 to 1)
 * Find the model that maxmises the incomes
