@@ -17,17 +17,20 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import RFECV
 from sklearn.metrics import roc_auc_score, roc_curve, make_scorer
-
+from xgboost import XGBClassifier
 
 FILEPATH = 'data/ML/E0_ML.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
-FEATURES_TO_KEEP = ['h_nb_games_home', 'h_season_points',
-                    'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
-                    'a_season_points', 'a_nb_goals_scored_away',
-                    'a_nb_goals_conceded_away']
-RDMF = False
+
+SELECTED_CLASSIFIER = 'xgboost'
+CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
+               'logreg': LogisticRegression(n_jobs=-1),
+               'xgboost': XGBClassifier(n_estimators=24, learning_rate=0.05, max_depth=3,
+                                        min_child_weight=1, gamma=0,
+                                        scale_pos_weight=1, nthread=-1, seed=27)}
+
 PROBA_THRESH = 0.6
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
@@ -64,10 +67,7 @@ if __name__ == '__main__':
     standardizer = StandardScaler()
     X = standardizer.fit_transform(X)
 
-    if RDMF:
-        classifier = RandomForestClassifier(n_jobs=-1)
-    else:
-        classifier = LogisticRegression(n_jobs=-1)
+    classifier = CLASSIFIERS[SELECTED_CLASSIFIER]
 
     aucroc_score = make_scorer(roc_auc_score)
     rfecv = RFECV(estimator=classifier, step=1, cv=StratifiedKFold(2),
@@ -76,7 +76,9 @@ if __name__ == '__main__':
 
     print("Optimal number of features : %d" % rfecv.n_features_)
     print(rfecv.ranking_)
-
+    best_features = [features[i]
+                     for i in range(len(rfecv.ranking_)) if rfecv.ranking_[i] == 1]
+    print(best_features)
     # Plot number of features VS. cross-validation scores
     plt.figure()
     plt.xlabel("Number of features selected")

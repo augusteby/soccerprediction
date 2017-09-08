@@ -14,6 +14,36 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve, f1_score, precision_score, recall_score
 from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
+import xgboost as xgb
+
+
+def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
+
+    if useTrainCV:
+        xgb_param = alg.get_xgb_params()
+        xgtrain = xgb.DMatrix(X, label=y)
+        cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
+                          metrics='auc', early_stopping_rounds=early_stopping_rounds, verbose_eval=True)
+        print(cvresult.shape[0])
+        alg.set_params(n_estimators=cvresult.shape[0])
+
+    # Fit the algorithm on the data
+    alg.fit(X, y, eval_metric='auc')
+
+    # Predict training set:
+    dtrain_predictions = alg.predict(X)
+    dtrain_predprob = alg.predict_proba(X)[:, 1]
+
+    # Print model report:
+    print "\nModel Report"
+    print "Accuracy : %.4g" % accuracy_score(y, dtrain_predictions)
+    print "AUC Score (Train): %f" % roc_auc_score(y, dtrain_predprob)
+
+    feat_imp = pd.Series(alg.booster().get_fscore()
+                         ).sort_values(ascending=False)
+    feat_imp.plot(kind='bar', title='Feature Importances')
+    plt.ylabel('Feature Importance Score')
 
 
 def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
@@ -67,11 +97,32 @@ FILEPATH = 'data/ML/E0_ML.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
-FEATURES_TO_KEEP = ['h_nb_games_home', 'h_season_points',
-                    'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
-                    'a_season_points', 'a_nb_goals_scored_away',
-                    'a_nb_goals_conceded_away']
-RDMF = False
+
+SELECTED_CLASSIFIER = 'xgboost'
+CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
+               'logreg': LogisticRegression(n_jobs=-1),
+               'xgboost': XGBClassifier(n_estimators=24, learning_rate=0.05, max_depth=3,
+                                        min_child_weight=1, gamma=0,
+                                        scale_pos_weight=1, nthread=-1, seed=27)}
+
+FEATURES_TO_KEEP = {'rdmf': ['h_season_points', 'h_mean_nb_goals_scored_home',
+                             'h_mean_nb_goals_conceded_home', 'h_season_wages',
+                             'a_mean_nb_goals_scored_away',
+                             'a_mean_nb_goals_conceded_away',
+                             'a_season_wages', 'distance_km'],
+                    'logreg': ['h_nb_games_home', 'h_nb_victories', 'h_season_points',
+                               'h_nb_games_total', 'h_nb_goals_scored_home',
+                               'h_season_wages', 'a_nb_games_away', 'a_season_points',
+                               'a_nb_games_total', 'a_season_wages'],
+                    'xgboost': ['h_nb_victories', 'h_season_points',
+                                'h_nb_games_total', 'h_nb_goals_scored_home',
+                                'h_mean_nb_goals_scored_home', 'h_nb_goals_conceded_home',
+                                'h_mean_nb_goals_conceded_home', 'h_season_wages',
+                                'a_season_points', 'a_nb_goals_scored_away',
+                                'a_mean_nb_goals_scored_away', 'a_mean_nb_goals_conceded_away',
+                                'a_season_wages', 'capacity_home_stadium']}
+
+
 PROBA_THRESH = 0.6
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
@@ -94,9 +145,8 @@ if __name__ == '__main__':
 
     y = data['home_win'].values
     data = data.drop('home_win', 1)
-    # data = data.drop('h_season_wages', 1)
-    # data = data.drop('a_season_wages', 1)
-    #data = data[FEATURES_TO_KEEP]
+
+    data = data[FEATURES_TO_KEEP[SELECTED_CLASSIFIER]]
 
     # for feat in FEATURES_LOG:
     #data[feat] = data[feat].apply(lambda x: np.log10(1+x))
@@ -106,10 +156,9 @@ if __name__ == '__main__':
     standardizer = StandardScaler()
     X = standardizer.fit_transform(X)
 
-    if RDMF:
-        classifier = RandomForestClassifier(n_jobs=-1)
-    else:
-        classifier = LogisticRegression(n_jobs=-1)
+    classifier = CLASSIFIERS[SELECTED_CLASSIFIER]
+    # modelfit(classifier, X, y)
+
     proba = cross_val_predict(classifier, X, y,
                               method='predict_proba',
                               cv=10, n_jobs=-1)
@@ -134,6 +183,8 @@ if __name__ == '__main__':
 
     profits_multipliers = get_profit_multipliers(y, predictions,
                                                  id_str, data_odds)
+
+    print('Classifier: %s' % SELECTED_CLASSIFIER)
     print('Sum of multipliers: %f' % np.sum(profits_multipliers))
     print('')
 
@@ -155,14 +206,3 @@ if __name__ == '__main__':
     plt.ylabel('True Positive Rate')
     plt.title('ROC curve')
     plt.show()
-
-    if RDMF:
-        classifier.fit(X, y)
-        print(features)
-        print(classifier.feature_importances_)
-    else:
-        classifier.fit(X, y)
-        for i in range(len(features)):
-            print(features[i])
-            print(classifier.coef_[0][i])
-            print('')

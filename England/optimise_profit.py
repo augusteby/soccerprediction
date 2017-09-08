@@ -71,7 +71,7 @@ FEATURES_TO_KEEP = ['h_nb_games_home', 'h_season_points',
                     'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
                     'a_season_points', 'a_nb_goals_scored_away',
                     'a_nb_goals_conceded_away']
-RDMF = False
+RDMF = True
 PROBA_THRESHOLDS = np.arange(0.5, 1, 0.03)
 
 if __name__ == '__main__':

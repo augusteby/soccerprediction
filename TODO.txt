@@ -25,3 +25,4 @@ winning for home team)
 
 Modeling:
 * Try with xgboost
+* Try stacking: RdmF, LogReg, xgboost
