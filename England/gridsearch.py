@@ -15,6 +15,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.gaussian_process import GaussianProcessClassifier
+from xgboost import XGBClassifier
+import xgboost as xgb
 
 
 def get_earning_coeff(y, predictions, id_strings, home_win_odds):
@@ -41,24 +43,25 @@ def get_earning_coeff(y, predictions, id_strings, home_win_odds):
 FILEPATH = 'data/ML/E0_ML.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 ML_ALGO = 'log_reg'
-ALGOS = {'rdmf': RandomForestClassifier,
-         'log_reg': LogisticRegression,
-         'knn': KNeighborsClassifier,
-         'svm': SVC,
-         'gnb': GaussianNB,
-         'ada': AdaBoostClassifier,
-         'gauss_proc': GaussianProcessClassifier}
-PARAM_GRID = {'rdmf': {'min_samples_leaf': [1, 10, 20, 40, 80],
-                       'max_features': ["auto", 0.4, 0.8]},
-              'log_reg': {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]},
-              'knn': {'n_neighbors': range(10, 100, 10),
+ALGOS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
+         'log_reg': LogisticRegression(n_jobs=-1),
+         'knn': KNeighborsClassifier(n_jobs=-1),
+         'svm': SVC(),
+         'ada': AdaBoostClassifier(),
+         'xgboost': XGBClassifier(nthread=-1)}
+PARAM_GRID = {'rdmf': {'min_samples_leaf': np.arange(0.1, 0.5, 0.01),
+                       'max_features': np.arange(0.1, 1, 0.01),
+                       'min_samples_split': np.arange(0.1, 1, 0.05)},
+              'log_reg': {'C': [10**i for i in range(-4, 2)]},
+              'knn': {'n_neighbors': range(1, 20, 3),
                       'p': [1, 2, 3]},
-              'svm': {'C': [0.1, 1, 10, 100, 1000],
-                      'gamma': [0.001, 0.01]},
-              'gnb': {},
-              'ada': {'learning_rate': [0.01, 0.1, 1, 10, 100],
+              'svm': {'C': [10**i for i in range(-4, 2)],
+                      'gamma': [10**i for i in range(-3, 2)]},
+              'ada': {'learning_rate': [10**i for i in range(-4, 2)],
                       'n_estimators': [100, 50]},
-              'gauss_proc': {}}
+              'xgboost': {'n_estimators': range(5, 250, 5),
+                          'learning_rate': [10**i for i in range(-4, 2)],
+                          'max_depth': [2, 3, 4, 5]}}
 
 if __name__ == '__main__':
     # Load data
@@ -88,12 +91,14 @@ if __name__ == '__main__':
 
     for algo in ALGOS:
         print(algo)
-        classifier = ALGOS[algo]()
+        classifier = ALGOS[algo]
 
         grid_search = GridSearchCV(classifier, param_grid=PARAM_GRID[algo],
-                                   scoring=log_loss_score, n_jobs=-1)
+                                   scoring=aucroc_score, cv=5,
+                                   verbose=10, n_jobs=-1)
         grid_search.fit(X, y)
 
         print('Algo: %s' % algo)
         print('Best score: %f' % grid_search.best_score_)
         print(grid_search.best_params_)
+        print('')
