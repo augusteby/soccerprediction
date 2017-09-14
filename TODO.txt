@@ -12,7 +12,7 @@ Feature engineering:
 * Add distance between HomeTeam and AwayTeam stadiums [DONE]
 * Add stadium capacity (assumption: the bigger the stadium, the more important
 the support for home team: this can have an impact on the likelihood of 
-winning for home team)
+winning for home team) [DONE]
 * Add payroll for HomeTeam and AwayTeam [DONE]
 * Add average home win odds
 * Model how much I would have won/lost in average 
@@ -24,5 +24,7 @@ winning for home team)
 * Find the model that maxmises the incomes
 
 Modeling:
-* Try with xgboost
-* Try stacking: RdmF, LogReg, xgboost
+* Try with xgboost [DONE]
+* Try stacking: RdmF, LogReg, xgboost [DONE]
+* Try Neural Network --> use Grid Search
+

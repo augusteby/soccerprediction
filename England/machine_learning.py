@@ -98,7 +98,7 @@ ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
 
-SELECTED_CLASSIFIER = 'xgboost'
+SELECTED_CLASSIFIER = 'rdmf'
 CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
                'logreg': LogisticRegression(n_jobs=-1),
                'xgboost': XGBClassifier(n_estimators=24, learning_rate=0.05, max_depth=3,

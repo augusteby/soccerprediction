@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
         grid_search = GridSearchCV(classifier, param_grid=PARAM_GRID[algo],
                                    scoring=aucroc_score, cv=5,
-                                   verbose=10, n_jobs=-1)
+                                   verbose=0, n_jobs=-1)
         grid_search.fit(X, y)
 
         print('Algo: %s' % algo)

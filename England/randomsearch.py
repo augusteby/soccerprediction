@@ -41,7 +41,7 @@ def get_earning_coeff(y, predictions, id_strings, home_win_odds):
 
     return sum_profit_multipliers
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n5.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 ML_ALGO = 'log_reg'
 ALGOS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
