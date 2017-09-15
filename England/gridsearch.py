@@ -40,15 +40,17 @@ def get_earning_coeff(y, predictions, id_strings, home_win_odds):
 
     return sum_profit_multipliers
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n3.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 ML_ALGO = 'log_reg'
-ALGOS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
+ALGOS = {
+# 'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
          'log_reg': LogisticRegression(n_jobs=-1),
-         'knn': KNeighborsClassifier(n_jobs=-1),
-         'svm': SVC(),
-         'ada': AdaBoostClassifier(),
-         'xgboost': XGBClassifier(nthread=-1)}
+         # 'knn': KNeighborsClassifier(n_jobs=-1),
+         'svm': SVC()
+         # 'ada': AdaBoostClassifier(),
+         # 'xgboost': XGBClassifier(nthread=-1)
+         }
 PARAM_GRID = {'rdmf': {'min_samples_leaf': np.arange(0.1, 0.5, 0.01),
                        'max_features': np.arange(0.1, 1, 0.01),
                        'min_samples_split': np.arange(0.1, 1, 0.05)},

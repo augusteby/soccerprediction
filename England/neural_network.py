@@ -3,13 +3,13 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
-from keras.optimizers import SGD
+from keras.optimizers import SGD, RMSprop
 from sklearn.metrics import roc_auc_score, accuracy_score
 import tensorflow as tf
 import matplotlib.pyplot as plt
 tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4))
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n3.csv'
 if __name__ == '__main__':
         # load data
     data = pd.read_csv(FILEPATH)
@@ -45,22 +45,25 @@ if __name__ == '__main__':
 
     # Creation of NN model
     model = Sequential()
-    model.add(Dense(5, input_dim=len(feature_names), init='glorot_uniform'))
+    model.add(Dense(1000, input_dim=len(feature_names), init='glorot_uniform'))
     model.add(Activation('relu'))
-    model.add(Dense(10, input_dim=len(feature_names), init='glorot_uniform'))
+    model.add(Dropout(0.75))
+    model.add(Dense(1000, init='glorot_uniform'))
     model.add(Activation('relu'))
+    model.add(Dropout(0.25))
     model.add(Dense(1, activation='sigmoid'))
-
-    sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.95, nesterov=True)
+    
+    rmsprop=RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+    sgd = SGD(lr=0.00009, decay=1e-6, momentum=0.95, nesterov=True)
     model.compile(loss='binary_crossentropy',
                   optimizer=sgd,
                   metrics=['accuracy'])
 
     hist = model.fit(X_train, y_train,
                      epochs=1000,
-                     batch_size=8, validation_split=0.33)
+                     batch_size=64, validation_split=0.33)
     print(hist.history.keys())
-    score = model.evaluate(X_test, y_test, batch_size=8)
+    score = model.evaluate(X_test, y_test, batch_size=64)
     print('')
     print('')
     print(model.metrics_names)

@@ -10,27 +10,31 @@ import os
 import math as m
 
 # constants
-['h_nb_victories', 'h_nb_draws', 'h_nb_defeats',
- 'h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_conceded',
- 'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home',
- 'h_nb_victories_home', 'h_nb_draws_home', 'h_nb_defeats_home',
- 'h_nb_points_home', 'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
- 'h_diff_goals_home', 'h_last_n_games_points_home', 'h_last_n_games_victories_home',
- 'h_last_n_games_draws_home', 'h_last_n_games_defeats_home', 'h_mean_nb_goals_scored_home',
- 'h_mean_nb_goals_conceded_home']
+FEAT_HOME_TEAM = ['h_nb_victories', 'h_nb_draws', 'h_nb_defeats',
+                  'h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_conceded',
+                  'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home',
+                  'h_nb_victories_home', 'h_nb_draws_home', 'h_nb_defeats_home',
+                  'h_nb_points_home', 'h_nb_goals_scored_home', 'h_nb_goals_conceded_home',
+                  'h_diff_goals_home', 'h_last_n_games_points_home', 'h_last_n_games_victories_home',
+                  'h_last_n_games_draws_home', 'h_last_n_games_defeats_home', 'h_mean_nb_goals_scored_home',
+                  'h_mean_nb_goals_conceded_home', 'h_season_wages']
 
-FEAT_TO_KEEP_FOR_ML = ['h_nb_games_home', 'h_nb_victories',
-                       'h_season_points', 'h_nb_games_total',
-                       'h_last_n_games_points', 'h_nb_goals_scored_home', 'h_mean_nb_goals_scored_home',
-                       'h_nb_goals_conceded_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages',
-                       'a_nb_games_away', 'a_nb_victories_draws',
-                       'a_season_points', 'a_nb_games_total',
-                       'a_last_n_games_points', 'a_nb_goals_scored_away', 'a_mean_nb_goals_scored_away',
-                       'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages',
-                       'Month', 'Week',
-                       'distance_km', 'capacity_home_stadium',
-                       'home_win',
-                       'id']
+FEAT_AWAY_TEAM = ['a_nb_victories', 'a_nb_draws', 'a_nb_defeats',
+                  'a_nb_points', 'a_nb_goals_scored', 'a_nb_goals_conceded',
+                  'a_nb_goals_diff', 'a_nb_games', 'a_nb_games_away',
+                  'a_nb_victories_away', 'a_nb_draws_away', 'a_nb_defeats_away',
+                  'a_nb_points_away', 'a_nb_goals_scored_away', 'a_nb_goals_conceded_away',
+                  'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_victories_away',
+                  'a_last_n_games_draws_away', 'a_last_n_games_defeats_away', 'a_mean_nb_goals_scored_away',
+                  'a_mean_nb_goals_conceded_away', 'a_season_wages']
+
+FEAT_TIME = ['Month', 'Week']
+FEAT_STADIUM = ['distance_km', 'capacity_home_stadium']
+LABEL = ['home_win']
+ID = ['id']
+
+FEAT_TO_KEEP_FOR_ML = (FEAT_HOME_TEAM + FEAT_AWAY_TEAM
+                       + FEAT_TIME + FEAT_STADIUM + LABEL + ID)
 
 FEAT_TO_KEEP_FOR_ML_DATE = FEAT_TO_KEEP_FOR_ML + ['Date']
 
@@ -102,7 +106,8 @@ def generate_all_season_games_features(one_season, data_wages_season,
                                                                 n=n)
         away_results = generate_results_awayteam_current_season(away_team,
                                                                 date,
-                                                                one_season)
+                                                                one_season,
+                                                                n=n)
 
         for res in home_results:
             if index == 0:
@@ -230,7 +235,7 @@ def get_home_results_current_season(team_name, previous_games, n=3):
         previous_games['HomeTeam'] == team_name]
     nb_home_games = len(previous_home_games.index)
     results = {'nb_home_games': nb_home_games,
-               'nb_home_points': 0
+               'nb_home_points': 0,
                'nb_home_victories': 0,
                'nb_home_draws': 0,
                'nb_home_defeats': 0,
@@ -314,9 +319,9 @@ def get_away_results_current_season(team_name, previous_games, n=3):
         last_n_away_draws = len(
             last_n_away_games[last_n_away_games['FTR'] == 'D'].index)
         last_n_away_defeats = len(
-            last_n_home_games[last_n_home_games['FTR'] == 'H'].index)
+            last_n_away_games[last_n_away_games['FTR'] == 'H'].index)
         results['last_n_games_away_nb_victories'] = last_n_away_victories
-        results['last_n_games_away_nb_draws'] = last_n_home_draws
+        results['last_n_games_away_nb_draws'] = last_n_away_draws
         results['last_n_games_away_nb_defeats'] = last_n_away_defeats
         results['last_n_games_away_points'] = 3 * \
             last_n_away_victories + 1 * last_n_away_draws
@@ -484,7 +489,7 @@ GAMES_FOLDER = DATA_FOLDER + '/Games/preprocessed'
 WAGES_FOLDER = DATA_FOLDER + '/Wages'
 STADIUM_FILEPATH = DATA_FOLDER + '/Stadium/stadiums_modified2.csv'
 ML_FOLDER = DATA_FOLDER + '/ML'
-N = 5  # number of previous games to consider
+N = 3  # number of previous games to consider
 if __name__ == '__main__':
     all_data = pd.DataFrame()
     stadium_data = pd.read_csv(STADIUM_FILEPATH)

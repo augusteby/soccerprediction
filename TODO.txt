@@ -4,7 +4,7 @@ Exploratory Data Analysis:
 
 Feature selection:
 * Select features based on their information gain vs the output
-
+* Feature selection should be done within cross-validation
 
 Feature engineering:
 

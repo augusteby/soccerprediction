@@ -8,6 +8,7 @@ import operator
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import cross_val_predict
@@ -16,7 +17,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc
 from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 import xgboost as xgb
-
+from sklearn.svm import SVC
 
 def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
 
@@ -93,34 +94,33 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     return profits_multipliers
 
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n3.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
 
-SELECTED_CLASSIFIER = 'rdmf'
+SELECTED_CLASSIFIER = 'xgboost'
 CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
-               'logreg': LogisticRegression(n_jobs=-1),
-               'xgboost': XGBClassifier(n_estimators=24, learning_rate=0.05, max_depth=3,
-                                        min_child_weight=1, gamma=0,
-                                        scale_pos_weight=1, nthread=-1, seed=27)}
+               'logreg': LogisticRegression(C=0.01, n_jobs=-1),
+               'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.1, max_depth=5,
+                                        nthread=-1, seed=27),
+               'svm': SVC(gamma=0.001, C=10,probability=True)}
 
-FEATURES_TO_KEEP = {'rdmf': ['h_season_points', 'h_mean_nb_goals_scored_home',
-                             'h_mean_nb_goals_conceded_home', 'h_season_wages',
-                             'a_mean_nb_goals_scored_away',
-                             'a_mean_nb_goals_conceded_away',
-                             'a_season_wages', 'distance_km'],
-                    'logreg': ['h_nb_games_home', 'h_nb_victories', 'h_season_points',
-                               'h_nb_games_total', 'h_nb_goals_scored_home',
-                               'h_season_wages', 'a_nb_games_away', 'a_season_points',
-                               'a_nb_games_total', 'a_season_wages'],
-                    'xgboost': ['h_nb_victories', 'h_season_points',
-                                'h_nb_games_total', 'h_nb_goals_scored_home',
-                                'h_mean_nb_goals_scored_home', 'h_nb_goals_conceded_home',
-                                'h_mean_nb_goals_conceded_home', 'h_season_wages',
-                                'a_season_points', 'a_nb_goals_scored_away',
-                                'a_mean_nb_goals_scored_away', 'a_mean_nb_goals_conceded_away',
-                                'a_season_wages', 'capacity_home_stadium']}
+FEATURES_TO_KEEP = {'rdmf': ['h_nb_points', 'h_nb_goals_conceded',
+                             'h_nb_goals_diff', 'h_mean_nb_goals_scored_home',
+                             'h_mean_nb_goals_conceded_home', 'a_nb_points',
+                             'a_nb_goals_scored', 'a_nb_goals_conceded',
+                             'a_nb_goals_diff', 'a_mean_nb_goals_scored_away',
+                             'a_mean_nb_goals_conceded_away', 'distance_km',
+                             'capacity_home_stadium'],
+                    'logreg': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home',
+                               'h_nb_victories_home', 'h_nb_points_home', 'h_diff_goals_home', 'h_last_n_games_points_home',
+                               'h_last_n_games_victories_home', 'a_nb_victories', 'a_nb_points', 'a_nb_goals_diff',
+                               'a_nb_games', 'a_nb_games_away', 'a_nb_victories_away', 'a_nb_points_away',
+                               'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_victories_away',
+                               'h_season_wages', 'a_season_wages',
+                               'Month', 'Week', 'distance_km', 'capacity_home_stadium'],
+                    'xgboost': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_draws_home', 'h_nb_goals_conceded_home', 'h_last_n_games_draws_home', 'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages', 'a_nb_victories', 'a_nb_draws', 'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_draws_away', 'a_nb_defeats_away', 'a_nb_goals_scored_away', 'a_nb_goals_conceded_away', 'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_draws_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'distance_km']}
 
 
 PROBA_THRESH = 0.6
@@ -138,15 +138,15 @@ if __name__ == '__main__':
     #data = data[data['h_nb_games_total']>18]
 
     # encode categorical data
-    if 'Month' in data.columns.values:
-        data = pd.get_dummies(data, columns=['Month'])
-    if 'Week' in data.columns.values:
-        data = pd.get_dummies(data, columns=['Week'])
+    # if 'Month' in data.columns.values:
+    #     data = pd.get_dummies(data, columns=['Month'])
+    # if 'Week' in data.columns.values:
+    #     data = pd.get_dummies(data, columns=['Week'])
 
     y = data['home_win'].values
     data = data.drop('home_win', 1)
 
-    data = data[FEATURES_TO_KEEP[SELECTED_CLASSIFIER]]
+    # data = data[FEATURES_TO_KEEP[SELECTED_CLASSIFIER]]
 
     # for feat in FEATURES_LOG:
     #data[feat] = data[feat].apply(lambda x: np.log10(1+x))

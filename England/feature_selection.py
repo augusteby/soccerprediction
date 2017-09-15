@@ -18,8 +18,10 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import RFECV
 from sklearn.metrics import roc_auc_score, roc_curve, make_scorer
 from xgboost import XGBClassifier
+from sklearn.svm import SVC
+from sklearn.feature_selection import VarianceThreshold
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n3.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
@@ -27,9 +29,8 @@ FEATURES_LOG = ['h_nb_victories', 'h_season_points',
 SELECTED_CLASSIFIER = 'xgboost'
 CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
                'logreg': LogisticRegression(n_jobs=-1),
-               'xgboost': XGBClassifier(n_estimators=24, learning_rate=0.05, max_depth=3,
-                                        min_child_weight=1, gamma=0,
-                                        scale_pos_weight=1, nthread=-1, seed=27)}
+               'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.1, max_depth=5,
+                                        nthread=-1, seed=27)}
 
 PROBA_THRESH = 0.6
 if __name__ == '__main__':
