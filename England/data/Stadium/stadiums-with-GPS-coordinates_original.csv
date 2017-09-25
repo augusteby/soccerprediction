@@ -1,4 +1,4 @@
-Team,FDCOUK,City,Stadium,Capacity,Latitude,Longitude,Country
+Team,TeamName,City,Stadium,Capacity,Latitude,Longitude,Country
 Arsenal ,Arsenal,London ,Emirates Stadium ,60361,51.555,-0.108611,England
 Aston Villa ,Aston Villa,Birmingham ,Villa Park ,42785,52.509167,-1.884722,England
 Blackburn Rovers ,Blackburn,Blackburn ,Ewood Park ,31154,53.728611,-2.489167,England
@@ -135,3 +135,4 @@ Brest,Brest,Brest,Stade Francis-Le Blé ,16000,48.402932,-4.461694,France
 Caen,Caen,Caen ,Stade Michel d'Ornano ,21500,49.179461,-0.396767,France
 Sporting de Gijón,Sp Gijon,Gijón,El Molinón,30000,43.536111,-5.637222,Spain
 Racing de Santander,Santander,Santander,Campos de Sport de El Sardinero,22222,43.476389,-3.793333,Spain
+Huddersfield Town A.F.C,Huddersfield,Huddersfield,John Smith's Stadium,24500,53.654167,-1.768333,England

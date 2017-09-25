@@ -1,6 +1,7 @@
 Exploratory Data Analysis:
 * Plot time vs percentage_home_team_win --> should give info on whether time features are relevant or not [DONE]
 * Study correlation between features for future feature selection
+* For all features, find the best split of the year (kruskall-wallis)
 
 Feature selection:
 * Select features based on their information gain vs the output
@@ -28,3 +29,5 @@ Modeling:
 * Try stacking: RdmF, LogReg, xgboost [DONE]
 * Try Neural Network --> use Grid Search
 
+Evaluation:
+* Evaluate current models on beginning of 2017/2018 season

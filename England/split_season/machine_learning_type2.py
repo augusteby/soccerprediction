@@ -8,6 +8,7 @@ import operator
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import cross_val_predict
@@ -16,6 +17,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc
 from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 import xgboost as xgb
+from sklearn.svm import SVC
 
 
 def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
@@ -48,9 +50,9 @@ def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
 
 def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     """
-    We define a profit multiplier as follow: 
+    We define a profit multiplier as follow:
     It is equal to 'decimal_odd -1'. If it is positive you
-    make (decimal_odd-1) time the money you bet, 
+    make (decimal_odd-1) time the money you bet,
     otherwise it is equal to -1 and you've lost the money you bet
 
     Parameters
@@ -60,7 +62,7 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     predictions: numpy.ndarray
         Predicted outcome
     id_strings: numpy.ndarray
-        List of ids in the same order of association as for the elements in 
+        List of ids in the same order of association as for the elements in
         'y' and 'predictions'
     home_win_odds: pandas.DataFrame
         'Home win' odds associated with each game
@@ -68,7 +70,7 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     Returns
     -------
     profits_multipliers: list
-        List that contains 
+        List that contains
     """
     profits_multipliers = []
     home_win_odds.index = home_win_odds['id']
@@ -93,17 +95,40 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     return profits_multipliers
 
 
-FILEPATH = 'data/ML/E0_ML_n3.csv'
-ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
-FEATURES_LOG = ['h_nb_victories', 'h_season_points',
-                'a_nb_victories_draws', 'a_season_points']
+FILEPATHS = {1: '../data/ML/E0_ML_n3_type2_part1.csv',
+             2: '../data/ML/E0_ML_n3_type2_part2.csv',
+             3: '../data/ML/E0_ML_n3_type2_part3.csv',
+             4: '../data/ML/E0_ML_n3_type2_part4.csv'}
+ODDS_FILEPATH = '../data/ML/E0_home_win_odds.csv'
 
-CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
-                                              min_samples_split=0.45, max_features=0.18,
-                                              n_jobs=-1),
-               'logreg': LogisticRegression(C=0.1, n_jobs=-1),
-               'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
-                                        nthread=-1, seed=27)}
+SELECTED_CLASSIFIER = {1: 'logreg',
+                       2: 'logreg',
+                       3: 'logreg',
+                       4: 'logreg'}
+CLASSIFIERS = {'rdmf': {1: RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
+                                                  min_samples_split=0.45, max_features=0.18,
+                                                  n_jobs=-1),
+                        2: RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
+                                                  min_samples_split=0.45, max_features=0.18,
+                                                  n_jobs=-1),
+                        3: RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
+                                                  min_samples_split=0.45, max_features=0.18,
+                                                  n_jobs=-1),
+                        4: RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
+                                                  min_samples_split=0.45, max_features=0.18,
+                                                  n_jobs=-1)},
+               'logreg': {1: LogisticRegression(C=10, n_jobs=-1),
+                          2: LogisticRegression(C=0.01, n_jobs=-1),
+                          3: LogisticRegression(C=100, n_jobs=-1),
+                          4: LogisticRegression(C=0.001, n_jobs=-1)},
+               'xgboost': {1: XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
+                                            nthread=-1, seed=27),
+                           2: XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
+                                            nthread=-1, seed=27),
+                           3: XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
+                                            nthread=-1, seed=27),
+                           4: XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
+                                            nthread=-1, seed=27)}}
 
 FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored',
                              'h_nb_goals_diff', 'h_nb_victories_home',
@@ -116,10 +141,10 @@ FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored
                              'a_last_n_games_defeats_away',
                              'a_mean_nb_goals_scored_away', 'a_season_wages',
                              'distance_km', 'capacity_home_stadium'],
-                    'logreg': ['h_nb_goals_scored', 'h_nb_goals_diff',
-                               'h_nb_games_home', 'h_season_wages',
-                               'a_nb_goals_scored', 'a_nb_goals_diff',
-                               'a_season_wages'],
+                    'logreg': {1: ['h_nb_games_home', 'h_nb_victories_home'],
+                               2: ['h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_diff', 'h_last_n_games_points_home', 'h_last_n_games_victories_home', 'h_mean_nb_goals_scored_home', 'h_season_wages', 'a_nb_games', 'a_last_n_games_draws_away', 'a_last_n_games_defeats_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'Month', 'distance_km', 'capacity_home_stadium'],
+                               3: ['h_mean_nb_goals_scored_home'],
+                               4: ['h_nb_points', 'h_season_wages']},
                     'xgboost': ['h_nb_points', 'h_nb_goals_scored',
                                 'h_nb_goals_diff', 'h_nb_draws_home',
                                 'h_nb_goals_conceded_home', 'h_last_n_games_draws_home',
@@ -132,59 +157,60 @@ FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored
                                 'a_season_wages', 'Week']}
 
 
-PROBA_THRESH = 0.6
+PROBA_THRESH = 0.7
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
-    data = pd.read_csv(FILEPATH)
 
-    # store id of games
-    id_str = data['id'].values
-    data = data.drop('id', 1)
+    for part_i in FILEPATHS:
 
-    # if ('Date' in set(data.columns.values)):
-    #     data['Date'] = pd.to_datetime(data['Date'])
+        data = pd.read_csv(FILEPATHS[part_i])
 
-    #data = data[data['h_nb_games_total']>18]
+        # store id of games
+        id_str = data['id'].values
+        data = data.drop('id', 1)
 
+        y = data['home_win_odd_above'].values
+        data = data.drop('home_win_odd_above', 1)
 
-    y = data['home_win'].values
-    data = data.drop('home_win', 1)
+        data = data[FEATURES_TO_KEEP[SELECTED_CLASSIFIER[part_i]][part_i]]
 
-    probas = {}
-    for classif_name in CLASSIFIERS:
         # for feat in FEATURES_LOG:
-        #data[feat] = data[feat].apply(lambda x: np.log10(1+x))
+        # data[feat] = data[feat].apply(lambda x: np.log10(1+x))
         features = data.columns
-        X = data[FEATURES_TO_KEEP[classif_name]].values
+        X = data.values
 
         standardizer = StandardScaler()
         X = standardizer.fit_transform(X)
 
-        classifier = CLASSIFIERS[classif_name]
+        classifier = CLASSIFIERS[SELECTED_CLASSIFIER[part_i]][part_i]
         # modelfit(classifier, X, y)
 
         proba = cross_val_predict(classifier, X, y,
                                   method='predict_proba',
                                   cv=10, n_jobs=-1)
         proba_home_win = [p[1] for p in proba]
-        probas[classif_name] = proba_home_win
+        predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
         auc = roc_auc_score(y, proba_home_win)
-        print(classif_name)
-        print(auc)
+        fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
+
+        acc = accuracy_score(y, predictions)
+        conf_mat = confusion_matrix(y, predictions)
+        f1 = f1_score(y, predictions)
+        prec = precision_score(y, predictions)
+        recall = recall_score(y, predictions)
+
+        profits_multipliers = get_profit_multipliers(y, predictions,
+                                                     id_str, data_odds)
+
+        print('Part %d' % part_i)
+        print('Classifier: %s' % SELECTED_CLASSIFIER[part_i])
+        print('Sum of multipliers: %f' % np.sum(profits_multipliers))
+        print('Area under the curve: %f' % auc)
+        plt.plot(fpr, tpr, label=part_i)
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC curve')
+        print('')
         print('')
 
-    mean_probas = []
-    nb_classifiers = len(CLASSIFIERS)
-
-    for i in range(len(y)):
-        mean_prob = 0
-        for classif_name in CLASSIFIERS:
-            mean_prob += probas[classif_name][i]
-
-        mean_prob /= nb_classifiers
-
-        mean_probas.append(mean_prob)
-
-    auc_mean = roc_auc_score(y, mean_probas)
-    print('Mean')
-    print(auc_mean)
+    plt.show()

@@ -1,4 +1,4 @@
-﻿Team,TeamName,City,Stadium,Capacity,Latitude,Longitude,Country
+Team,TeamName,City,Stadium,Capacity,Latitude,Longitude,Country
 Arsenal,Arsenal,London,Emirates Stadium,60361,51.555,-0.108611,England
 Aston Villa,Aston Villa,Birmingham,Villa Park,42785,52.509167,-1.884722,England
 Blackburn Rovers,Blackburn,Blackburn,Ewood Park,31154,53.728611,-2.489167,England
@@ -22,7 +22,6 @@ Wolverhampton Wanderers,Wolves,Wolverhampton,Molineux Stadium,27828,52.590278,-2
 Barnsley,Barnsley,Barnsley,Oakwell,23009,53.552222,-1.4675,England
 Birmingham City,Birmingham,Birmingham,St Andrew's Stadium,30079,52.475703,-1.868189,England
 Blackpool,Blackpool,Blackpool,Bloomfield Road,16220,53.804722,-3.048056,England
-AFC Bournemouth,Bournemouth,Bournemouth,Dean Court,11360,50.7352778,-1.838333,England
 Brighton & Hove Albion,Brighton,Brighton,American Express Community Stadium,22374,50.861822,-0.083278,England
 Bristol City,Bristol City,Bristol,Ashton Gate,21497,51.44,-2.620278,England
 Burnley,Burnley,Burnley,Turf Moor,22546,53.789167,-2.230278,England
@@ -136,3 +135,5 @@ Brest,Brest,Brest,Stade Francis-Le Blé,16000,48.402932,-4.461694,France
 Caen,Caen,Caen,Stade Michel d'Ornano,21500,49.179461,-0.396767,France
 Sporting de Gijón,Sp Gijon,Gijón,El Molinón,30000,43.536111,-5.637222,Spain
 Racing de Santander,Santander,Santander,Campos de Sport de El Sardinero,22222,43.476389,-3.793333,Spain
+Huddersfield Town A.F.C,Huddersfield,Huddersfield,John Smith's Stadium,24500,53.654167,-1.768333,England
+A.F.C. Bournemouth,Bournemouth,Bournemouth,Vitality Stadium,11360,50.73523059999999,-1.8382791000000225,England

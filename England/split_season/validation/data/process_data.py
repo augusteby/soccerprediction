@@ -501,11 +501,11 @@ def get_distance_between_stadiums(team1, team2, stadium_data):
     return distance
 
     # parameters
-DATA_FOLDER = 'data'
-GAMES_FOLDER = DATA_FOLDER + '/Games/preprocessed'
-WAGES_FOLDER = DATA_FOLDER + '/Wages'
-STADIUM_FILEPATH = DATA_FOLDER + '/Stadium/stadiums_modified2.csv'
-ML_FOLDER = DATA_FOLDER + '/ML'
+DATA_FOLDER = '../../../data/'
+GAMES_FOLDER = 'preprocessed'
+WAGES_FOLDER = DATA_FOLDER + 'Wages'
+STADIUM_FILEPATH = DATA_FOLDER + 'Stadium/stadiums_modified2.csv'
+ML_FOLDER = 'ML'
 N = 3  # number of previous games to consider
 if __name__ == '__main__':
     all_data = pd.DataFrame()
@@ -538,45 +538,16 @@ if __name__ == '__main__':
 
     # sort all data by date
     all_data = all_data.sort_values(by='Date')
-    data_part1 = all_data[(all_data['Date'].dt.month >= 8)
-                          & (all_data['Date'].dt.month <= 10)]
-    data_part2 = all_data[(all_data['Date'].dt.month >= 11)
-                          & (all_data['Date'].dt.month <= 12)]
-    data_part3 = all_data[(all_data['Date'].dt.month >= 1)
-                          & (all_data['Date'].dt.month <= 2)]
-    data_part4 = all_data[(all_data['Date'].dt.month >= 3)
-                          & (all_data['Date'].dt.month <= 5)]
 
     division = all_data['Div'].values[0]
-
-    all_data_ML = all_data[FEAT_TO_KEEP_FOR_ML]
-    data_part1 = data_part1[FEAT_TO_KEEP_FOR_ML]
-    data_part2 = data_part2[FEAT_TO_KEEP_FOR_ML]
-    data_part3 = data_part3[FEAT_TO_KEEP_FOR_ML]
-    data_part4 = data_part4[FEAT_TO_KEEP_FOR_ML]
-
-    filepath_ML = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '.csv'
-    all_data_ML.to_csv(filepath_ML, index=False)
-
-    fpath_ML_p1 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part1.csv'
-    data_part1.to_csv(fpath_ML_p1, index=False)
-
-    fpath_ML_p2 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part2.csv'
-    data_part2.to_csv(fpath_ML_p2, index=False)
-
-    fpath_ML_p3 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part3.csv'
-    data_part3.to_csv(fpath_ML_p3, index=False)
-
-    fpath_ML_p4 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part4.csv'
-    data_part4.to_csv(fpath_ML_p4, index=False)
 
     # Include date
     all_data_ML_date = all_data[FEAT_TO_KEEP_FOR_ML_DATE]
     filepath_ML_date = ML_FOLDER + '/' + \
-        division + '_ML_n' + str(N) + '_date.csv'
+        division + '_ML_n' + str(N) + '_date_valid.csv'
     all_data_ML_date.to_csv(filepath_ML_date, index=False)
 
     # Home win odds data
     all_data_home_win_odds = all_data[FEAT_TO_KEEP_HOME_WIN_ODDS]
-    filepath_home_win_odds = ML_FOLDER + '/' + division + '_home_win_odds.csv'
+    filepath_home_win_odds = ML_FOLDER + '/' + division + '_home_win_odds_valid.csv'
     all_data_home_win_odds.to_csv(filepath_home_win_odds, index=False)

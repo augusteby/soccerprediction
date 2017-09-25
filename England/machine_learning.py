@@ -19,6 +19,7 @@ from xgboost import XGBClassifier
 import xgboost as xgb
 from sklearn.svm import SVC
 
+
 def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
 
     if useTrainCV:
@@ -99,31 +100,48 @@ ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
 
-SELECTED_CLASSIFIER = 'xgboost'
-CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
-               'logreg': LogisticRegression(C=0.01, n_jobs=-1),
-               'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.1, max_depth=5,
+SELECTED_CLASSIFIER = 'logreg'
+CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
+                                              min_samples_split=0.45, max_features=0.18,
+                                              n_jobs=-1),
+               'logreg': LogisticRegression(C=0.001, n_jobs=-1),
+               'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
                                         nthread=-1, seed=27),
-               'svm': SVC(gamma=0.001, C=10,probability=True)}
+               'svm': SVC(gamma=0.001, C=10, probability=True),
+               'ada': AdaBoostClassifier(learning_rate=1, n_estimators=100)}
 
-FEATURES_TO_KEEP = {'rdmf': ['h_nb_points', 'h_nb_goals_conceded',
-                             'h_nb_goals_diff', 'h_mean_nb_goals_scored_home',
-                             'h_mean_nb_goals_conceded_home', 'a_nb_points',
-                             'a_nb_goals_scored', 'a_nb_goals_conceded',
-                             'a_nb_goals_diff', 'a_mean_nb_goals_scored_away',
-                             'a_mean_nb_goals_conceded_away', 'distance_km',
-                             'capacity_home_stadium'],
-                    'logreg': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home',
-                               'h_nb_victories_home', 'h_nb_points_home', 'h_diff_goals_home', 'h_last_n_games_points_home',
-                               'h_last_n_games_victories_home', 'a_nb_victories', 'a_nb_points', 'a_nb_goals_diff',
-                               'a_nb_games', 'a_nb_games_away', 'a_nb_victories_away', 'a_nb_points_away',
-                               'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_victories_away',
-                               'h_season_wages', 'a_season_wages',
-                               'Month', 'Week', 'distance_km', 'capacity_home_stadium'],
-                    'xgboost': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_draws_home', 'h_nb_goals_conceded_home', 'h_last_n_games_draws_home', 'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages', 'a_nb_victories', 'a_nb_draws', 'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_draws_away', 'a_nb_defeats_away', 'a_nb_goals_scored_away', 'a_nb_goals_conceded_away', 'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_draws_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'distance_km']}
+FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored',
+                             'h_nb_goals_diff', 'h_nb_victories_home',
+                             'h_nb_points_home', 'h_nb_goals_scored_home',
+                             'h_diff_goals_home', 'h_mean_nb_goals_scored_home',
+                             'h_season_wages', 'a_nb_goals_diff',
+                             'a_nb_victories_away', 'a_nb_defeats_away',
+                             'a_nb_points_away', 'a_diff_goals_away',
+                             'a_last_n_games_victories_away',
+                             'a_last_n_games_defeats_away',
+                             'a_mean_nb_goals_scored_away', 'a_season_wages',
+                             'distance_km', 'capacity_home_stadium'],
+                    'logreg': ['h_nb_goals_diff', 'h_season_wages', 'a_nb_goals_diff', 'a_season_wages'],
+                    'xgboost': ['h_nb_points', 'h_nb_goals_scored',
+                                'h_nb_goals_diff', 'h_nb_draws_home',
+                                'h_nb_goals_conceded_home', 'h_last_n_games_draws_home',
+                                'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home',
+                                'h_season_wages', 'a_nb_victories', 'a_nb_draws',
+                                'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_draws_away',
+                                'a_nb_defeats_away', 'a_nb_goals_scored_away',
+                                'a_nb_goals_conceded_away', 'a_diff_goals_away',
+                                'a_last_n_games_draws_away', 'a_mean_nb_goals_conceded_away',
+                                'a_season_wages', 'Week'],
+                    'ada': ['h_nb_draws', 'h_nb_goals_scored',
+                            'h_nb_goals_diff', 'h_nb_victories_home',
+                            'h_diff_goals_home', 'h_mean_nb_goals_scored_home',
+                            'h_mean_nb_goals_conceded_home', 'h_season_wages',
+                            'a_nb_points', 'a_nb_goals_conceded', 'a_nb_goals_diff',
+                            'a_diff_goals_away', 'a_mean_nb_goals_scored_away',
+                            'a_mean_nb_goals_conceded_away', 'a_season_wages']}
 
 
-PROBA_THRESH = 0.6
+PROBA_THRESH = 0.5
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
     data = pd.read_csv(FILEPATH)

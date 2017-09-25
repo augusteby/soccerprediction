@@ -1,13 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Apr  8 21:17:04 2017
-
-@author: AUGUSTE
-"""
 import operator
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import cross_val_predict
@@ -16,6 +11,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc
 from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 import xgboost as xgb
+from sklearn.svm import SVC
 
 
 def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
@@ -93,17 +89,20 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     return profits_multipliers
 
 
-FILEPATH = 'data/ML/E0_ML_n3.csv'
+FILEPATH = 'data/ML/E0_ML_n3_type2.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 FEATURES_LOG = ['h_nb_victories', 'h_season_points',
                 'a_nb_victories_draws', 'a_season_points']
 
+SELECTED_CLASSIFIER = 'logreg'
 CLASSIFIERS = {'rdmf': RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
                                               min_samples_split=0.45, max_features=0.18,
                                               n_jobs=-1),
-               'logreg': LogisticRegression(C=0.1, n_jobs=-1),
+               'logreg': LogisticRegression(C=0.0001, n_jobs=-1),
                'xgboost': XGBClassifier(n_estimators=115, learning_rate=0.01, max_depth=3,
-                                        nthread=-1, seed=27)}
+                                        nthread=-1, seed=27),
+               'svm': SVC(gamma=0.001, C=10, probability=True),
+               'ada': AdaBoostClassifier(learning_rate=1, n_estimators=100)}
 
 FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored',
                              'h_nb_goals_diff', 'h_nb_victories_home',
@@ -116,10 +115,7 @@ FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored
                              'a_last_n_games_defeats_away',
                              'a_mean_nb_goals_scored_away', 'a_season_wages',
                              'distance_km', 'capacity_home_stadium'],
-                    'logreg': ['h_nb_goals_scored', 'h_nb_goals_diff',
-                               'h_nb_games_home', 'h_season_wages',
-                               'a_nb_goals_scored', 'a_nb_goals_diff',
-                               'a_season_wages'],
+                    'logreg': ['h_season_wages'],
                     'xgboost': ['h_nb_points', 'h_nb_goals_scored',
                                 'h_nb_goals_diff', 'h_nb_draws_home',
                                 'h_nb_goals_conceded_home', 'h_last_n_games_draws_home',
@@ -129,10 +125,17 @@ FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored
                                 'a_nb_defeats_away', 'a_nb_goals_scored_away',
                                 'a_nb_goals_conceded_away', 'a_diff_goals_away',
                                 'a_last_n_games_draws_away', 'a_mean_nb_goals_conceded_away',
-                                'a_season_wages', 'Week']}
+                                'a_season_wages', 'Week'],
+                    'ada': ['h_nb_draws', 'h_nb_goals_scored',
+                            'h_nb_goals_diff', 'h_nb_victories_home',
+                            'h_diff_goals_home', 'h_mean_nb_goals_scored_home',
+                            'h_mean_nb_goals_conceded_home', 'h_season_wages',
+                            'a_nb_points', 'a_nb_goals_conceded', 'a_nb_goals_diff',
+                            'a_diff_goals_away', 'a_mean_nb_goals_scored_away',
+                            'a_mean_nb_goals_conceded_away', 'a_season_wages']}
 
 
-PROBA_THRESH = 0.6
+PROBA_THRESH = 0.5
 if __name__ == '__main__':
     data_odds = pd.read_csv(ODDS_FILEPATH)
     data = pd.read_csv(FILEPATH)
@@ -146,45 +149,72 @@ if __name__ == '__main__':
 
     #data = data[data['h_nb_games_total']>18]
 
+    # encode categorical data
+    # if 'Month' in data.columns.values:
+    #     data = pd.get_dummies(data, columns=['Month'])
+    # if 'Week' in data.columns.values:
+    #     data = pd.get_dummies(data, columns=['Week'])
 
-    y = data['home_win'].values
-    data = data.drop('home_win', 1)
+    y = data['home_win_odd_above'].values
+    data = data.drop('home_win_odd_above', 1)
 
-    probas = {}
-    for classif_name in CLASSIFIERS:
-        # for feat in FEATURES_LOG:
-        #data[feat] = data[feat].apply(lambda x: np.log10(1+x))
-        features = data.columns
-        X = data[FEATURES_TO_KEEP[classif_name]].values
+    data = data[FEATURES_TO_KEEP[SELECTED_CLASSIFIER]]
 
-        standardizer = StandardScaler()
-        X = standardizer.fit_transform(X)
+    # for feat in FEATURES_LOG:
+    #data[feat] = data[feat].apply(lambda x: np.log10(1+x))
+    features = data.columns
+    X = data.values
 
-        classifier = CLASSIFIERS[classif_name]
-        # modelfit(classifier, X, y)
+    standardizer = StandardScaler()
+    X = standardizer.fit_transform(X)
 
-        proba = cross_val_predict(classifier, X, y,
-                                  method='predict_proba',
-                                  cv=10, n_jobs=-1)
-        proba_home_win = [p[1] for p in proba]
-        probas[classif_name] = proba_home_win
-        auc = roc_auc_score(y, proba_home_win)
-        print(classif_name)
-        print(auc)
-        print('')
+    classifier = CLASSIFIERS[SELECTED_CLASSIFIER]
+    # modelfit(classifier, X, y)
 
-    mean_probas = []
-    nb_classifiers = len(CLASSIFIERS)
+    proba = cross_val_predict(classifier, X, y,
+                              method='predict_proba',
+                              cv=10, n_jobs=-1)
+    proba_home_win = [p[1] for p in proba]
+    predictions = [1 if p[1] > PROBA_THRESH else 0 for p in proba]
+    auc = roc_auc_score(y, proba_home_win)
+    fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
 
-    for i in range(len(y)):
-        mean_prob = 0
-        for classif_name in CLASSIFIERS:
-            mean_prob += probas[classif_name][i]
+    coeff_tnr = 0.6
+    coeff_tpr = 0.4
+    tnr_plus_tpr = [coeff_tnr * (1 - fpr[i]) + coeff_tpr * tpr[i]
+                    for i in range(len(fpr))]
+    index_max, max_tnr_plus_tpr = max(
+        enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
+    thresholds_of_max = thresholds[index_max]
 
-        mean_prob /= nb_classifiers
+    acc = accuracy_score(y, predictions)
+    conf_mat = confusion_matrix(y, predictions)
+    f1 = f1_score(y, predictions)
+    prec = precision_score(y, predictions)
+    recall = recall_score(y, predictions)
 
-        mean_probas.append(mean_prob)
+    profits_multipliers = get_profit_multipliers(y, predictions,
+                                                 id_str, data_odds)
 
-    auc_mean = roc_auc_score(y, mean_probas)
-    print('Mean')
-    print(auc_mean)
+    print('Classifier: %s' % SELECTED_CLASSIFIER)
+    print('Sum of multipliers: %f' % np.sum(profits_multipliers))
+    print('')
+
+    print('Proba Threshold: %f' % PROBA_THRESH)
+    print('Accuracy: %f' % acc)
+    print('F1: %f' % f1)
+    print('Precision: %f' % prec)
+    print('Recall: %f' % recall)
+
+    print('')
+    print('Max %.2f*tnr + %.2f*tpr: %f' %
+          (coeff_tnr, coeff_tpr, max_tnr_plus_tpr))
+    print('tnr @ max: %f' % (1 - fpr[index_max]))
+    print('tpr @ max: %f' % tpr[index_max])
+    print('Threshold of max fpr + tnr: %f' % thresholds_of_max)
+    print('Area under the curve: %f' % auc)
+    plt.plot(fpr, tpr)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC curve')
+    plt.show()

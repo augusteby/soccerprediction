@@ -9,7 +9,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=4))
 
-FILEPATH = 'data/ML/E0_ML.csv'
+FILEPATH = 'data/ML/E0_ML_n3.csv'
 if __name__ == '__main__':
         # load data
     data = pd.read_csv(FILEPATH)
