@@ -507,6 +507,11 @@ WAGES_FOLDER = DATA_FOLDER + '/Wages'
 STADIUM_FILEPATH = DATA_FOLDER + '/Stadium/stadiums_modified2.csv'
 ML_FOLDER = DATA_FOLDER + '/ML'
 N = 3  # number of previous games to consider
+SEASON_PARTS = {1: {'min_month': 8, 'max_month': 8},
+                2: {'min_month': 9, 'max_month': 10},
+                3: {'min_month': 11, 'max_month': 12},
+                4: {'min_month': 1, 'max_month': 2},
+                5: {'min_month': 3, 'max_month': 5}}
 if __name__ == '__main__':
     all_data = pd.DataFrame()
     stadium_data = pd.read_csv(STADIUM_FILEPATH)
@@ -538,37 +543,20 @@ if __name__ == '__main__':
 
     # sort all data by date
     all_data = all_data.sort_values(by='Date')
-    data_part1 = all_data[(all_data['Date'].dt.month >= 8)
-                          & (all_data['Date'].dt.month <= 10)]
-    data_part2 = all_data[(all_data['Date'].dt.month >= 11)
-                          & (all_data['Date'].dt.month <= 12)]
-    data_part3 = all_data[(all_data['Date'].dt.month >= 1)
-                          & (all_data['Date'].dt.month <= 2)]
-    data_part4 = all_data[(all_data['Date'].dt.month >= 3)
-                          & (all_data['Date'].dt.month <= 5)]
-
     division = all_data['Div'].values[0]
-
     all_data_ML = all_data[FEAT_TO_KEEP_FOR_ML]
-    data_part1 = data_part1[FEAT_TO_KEEP_FOR_ML]
-    data_part2 = data_part2[FEAT_TO_KEEP_FOR_ML]
-    data_part3 = data_part3[FEAT_TO_KEEP_FOR_ML]
-    data_part4 = data_part4[FEAT_TO_KEEP_FOR_ML]
-
     filepath_ML = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '.csv'
     all_data_ML.to_csv(filepath_ML, index=False)
 
-    fpath_ML_p1 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part1.csv'
-    data_part1.to_csv(fpath_ML_p1, index=False)
+    for part_i in SEASON_PARTS:
+        data_parti = all_data[(all_data['Date'].dt.month >= SEASON_PARTS[part_i]['min_month'])
+                              & (all_data['Date'].dt.month <= SEASON_PARTS[part_i]['max_month'])]
 
-    fpath_ML_p2 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part2.csv'
-    data_part2.to_csv(fpath_ML_p2, index=False)
+        data_parti = data_parti[FEAT_TO_KEEP_FOR_ML]
 
-    fpath_ML_p3 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part3.csv'
-    data_part3.to_csv(fpath_ML_p3, index=False)
-
-    fpath_ML_p4 = ML_FOLDER + '/' + division + '_ML_n' + str(N) + '_part4.csv'
-    data_part4.to_csv(fpath_ML_p4, index=False)
+        fpath_ML_pi = (ML_FOLDER + '/' + division + '_ML_n'
+                       + str(N) + '_part' + str(part_i) + '.csv')
+        data_parti.to_csv(fpath_ML_pi, index=False)
 
     # Include date
     all_data_ML_date = all_data[FEAT_TO_KEEP_FOR_ML_DATE]

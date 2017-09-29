@@ -1,3 +1,6 @@
+URGENT:
+check whether cross-validation is stratified or not (even number of 0 and 1 in train and test)
+
 Exploratory Data Analysis:
 * Plot time vs percentage_home_team_win --> should give info on whether time features are relevant or not [DONE]
 * Study correlation between features for future feature selection
