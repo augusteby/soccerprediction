@@ -38,9 +38,9 @@ def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
     dtrain_predprob = alg.predict_proba(X)[:, 1]
 
     # Print model report:
-    print "\nModel Report"
-    print "Accuracy : %.4g" % accuracy_score(y, dtrain_predictions)
-    print "AUC Score (Train): %f" % roc_auc_score(y, dtrain_predprob)
+    print("\nModel Report")
+    print("Accuracy : %.4g" % accuracy_score(y, dtrain_predictions))
+    print("AUC Score (Train): %f" % roc_auc_score(y, dtrain_predprob))
 
     feat_imp = pd.Series(alg.booster().get_fscore()
                          ).sort_values(ascending=False)
@@ -97,13 +97,15 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
 FILEPATHS = {1: '../data/ML/E0_ML_n3_part1.csv',
              2: '../data/ML/E0_ML_n3_part2.csv',
              3: '../data/ML/E0_ML_n3_part3.csv',
-             4: '../data/ML/E0_ML_n3_part4.csv'}
+             4: '../data/ML/E0_ML_n3_part4.csv',
+             5: '../data/ML/E0_ML_n3_part5.csv'}
 ODDS_FILEPATH = '../data/ML/E0_home_win_odds.csv'
 
 SELECTED_CLASSIFIER = {1: 'logreg',
                        2: 'logreg',
                        3: 'logreg',
-                       4: 'logreg'}
+                       4: 'logreg',
+                       5: 'logreg'}
 CLASSIFIERS = {'rdmf': {1: RandomForestClassifier(n_estimators=100, min_samples_leaf=0.12,
                                                   min_samples_split=0.45, max_features=0.18,
                                                   n_jobs=-1),
@@ -117,9 +119,10 @@ CLASSIFIERS = {'rdmf': {1: RandomForestClassifier(n_estimators=100, min_samples_
                                                   min_samples_split=0.45, max_features=0.18,
                                                   n_jobs=-1)},
                'logreg': {1: LogisticRegression(C=0.01, n_jobs=-1),
-                          2: LogisticRegression(C=10, n_jobs=-1),
-                          3: LogisticRegression(C=0.1, n_jobs=-1),
-                          4: LogisticRegression(C=0.1, n_jobs=-1)},
+                          2: LogisticRegression(C=1, n_jobs=-1),
+                          3: LogisticRegression(C=0.0001, n_jobs=-1),
+                          4: LogisticRegression(C=1e-05, n_jobs=-1),
+                          5: LogisticRegression(C=100, n_jobs=-1)},
                'xgboost': {1: XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=3,
                                             nthread=-1, seed=27),
                            2: XGBClassifier(n_estimators=100, learning_rate=0.01, max_depth=5,
@@ -140,10 +143,11 @@ FEATURES_TO_KEEP = {'rdmf': ['h_nb_victories', 'h_nb_points', 'h_nb_goals_scored
                              'a_last_n_games_defeats_away',
                              'a_mean_nb_goals_scored_away', 'a_season_wages',
                              'distance_km', 'capacity_home_stadium'],
-                    'logreg': {1: ['h_season_wages', 'diff_nb_defeats', 'diff_season_wages'],
-                               2: ['h_nb_goals_scored', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home', 'h_nb_goals_conceded_home', 'h_diff_goals_home', 'h_last_n_games_points_home', 'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages', 'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'Month', 'Week', 'distance_km'],
-                               3: ['h_nb_goals_diff', 'a_season_wages'],
-                               4: ['h_nb_goals_diff', 'a_nb_goals_scored', 'a_nb_goals_diff']},
+                    'logreg': {1: ['diff_season_wages'],
+                               2: ['h_nb_draws', 'h_nb_defeats', 'h_nb_goals_scored', 'h_nb_goals_conceded', 'h_nb_games', 'h_nb_games_home', 'h_nb_victories_home', 'h_nb_draws_home', 'h_nb_defeats_home', 'h_nb_goals_scored_home', 'h_nb_goals_conceded_home', 'h_diff_goals_home', 'h_last_n_games_victories_home', 'h_season_wages', 'a_nb_goals_scored', 'a_nb_victories_away', 'a_nb_draws_away', 'a_nb_defeats_away', 'a_nb_goals_scored_away', 'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_draws_away', 'a_last_n_games_defeats_away', 'a_mean_nb_goals_scored_away', 'a_season_wages', 'diff_nb_defeats', 'diff_nb_points', 'diff_season_wages', 'Month', 'Week'],
+                               3: ['diff_nb_goals_diff', 'diff_season_wages'],
+                               4: ['diff_nb_goals_diff', 'diff_season_wages'],
+                               5: ['h_nb_goals_scored_home', 'h_mean_nb_goals_scored_home', 'diff_nb_goals_diff']},
                     'xgboost': {1: ['h_nb_goals_diff', 'a_nb_goals_diff', 'a_season_wages', 'distance_km'],
                                 2: ['h_nb_victories', 'h_nb_draws', 'h_nb_goals_scored', 'h_nb_goals_conceded', 'h_nb_goals_diff', 'h_nb_draws_home', 'h_nb_points_home', 'h_nb_goals_scored_home', 'h_last_n_games_draws_home', 'h_mean_nb_goals_scored_home', 'h_season_wages', 'a_nb_victories', 'a_nb_draws', 'a_nb_goals_scored', 'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_points_away', 'a_diff_goals_away', 'a_last_n_games_points_away', 'a_last_n_games_draws_away', 'a_mean_nb_goals_scored_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'Week', 'distance_km'],
                                 3: ['h_nb_defeats', 'h_nb_points', 'h_nb_goals_scored', 'h_nb_goals_diff', 'h_nb_points_home', 'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages', 'a_nb_points', 'a_nb_goals_scored', 'a_nb_goals_diff', 'a_nb_defeats_away', 'a_nb_goals_conceded_away', 'a_last_n_games_draws_away', 'a_mean_nb_goals_scored_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'Week', 'distance_km', 'capacity_home_stadium'],

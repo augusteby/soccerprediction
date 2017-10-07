@@ -37,19 +37,19 @@ def get_earning_coeff(y, predictions, id_strings, home_win_odds):
 
     return sum_profit_multipliers
 
-FILEPATH = 'data/ML/E0_ML_n3_part1.csv'
+FILEPATH = 'data/ML/E0_ML_n3_part5.csv'
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds.csv'
 ML_ALGO = 'log_reg'
 ALGOS = {
     #'rdmf': RandomForestClassifier(n_estimators=100, n_jobs=-1),
-    'log_reg': LogisticRegression(n_jobs=-1),
+    'log_reg': LogisticRegression(),
     # 'ada': AdaBoostClassifier(),
     #'xgboost': XGBClassifier(nthread=-1)
 }
 PARAM_GRID = {'rdmf': {'estimator__min_samples_leaf': np.arange(0.1, 0.5, 0.01),
                        'estimator__max_features': np.arange(0.1, 1, 0.01),
                        'estimator__min_samples_split': np.arange(0.1, 1, 0.05)},
-              'log_reg': {'estimator__C': [10**i for i in range(-4, 3)]},
+              'log_reg': {'estimator__C': [10**i for i in range(-5, 3)]},
               'ada': {'estimator__learning_rate': [10**i for i in range(-4, 2)],
                       'estimator__n_estimators': [100, 50]},
               'xgboost': {'estimator__n_estimators': [50, 100, 150],
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         print(algo)
         classifier = ALGOS[algo]
 
-        selector = RFECV(classifier, step=1, cv=5, n_jobs=-1)
+        selector = RFECV(classifier, step=1, cv=5)
 
         grid_search = GridSearchCV(selector, param_grid=PARAM_GRID[algo],
                                    scoring=earning_coeff_score, cv=5,

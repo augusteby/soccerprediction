@@ -21,34 +21,6 @@ from sklearn.svm import SVC
 import pickle
 
 
-def modelfit(alg, X, y, useTrainCV=True, cv_folds=5, early_stopping_rounds=50):
-
-    if useTrainCV:
-        xgb_param = alg.get_xgb_params()
-        xgtrain = xgb.DMatrix(X, label=y)
-        cvresult = xgb.cv(xgb_param, xgtrain, num_boost_round=alg.get_params()['n_estimators'], nfold=cv_folds,
-                          metrics='auc', early_stopping_rounds=early_stopping_rounds, verbose_eval=True)
-        print(cvresult.shape[0])
-        alg.set_params(n_estimators=cvresult.shape[0])
-
-    # Fit the algorithm on the data
-    alg.fit(X, y, eval_metric='auc')
-
-    # Predict training set:
-    dtrain_predictions = alg.predict(X)
-    dtrain_predprob = alg.predict_proba(X)[:, 1]
-
-    # Print model report:
-    print "\nModel Report"
-    print "Accuracy : %.4g" % accuracy_score(y, dtrain_predictions)
-    print "AUC Score (Train): %f" % roc_auc_score(y, dtrain_predprob)
-
-    feat_imp = pd.Series(alg.booster().get_fscore()
-                         ).sort_values(ascending=False)
-    feat_imp.plot(kind='bar', title='Feature Importances')
-    plt.ylabel('Feature Importance Score')
-
-
 def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     """
     We define a profit multiplier as follow:
@@ -75,11 +47,13 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
     """
     profits_multipliers = []
     home_win_odds.index = home_win_odds['id']
+    odds = []
     for i in range(len(y)):
         pred = predictions[i]
         real = y[i]
         id_str = id_strings[i]
         home_win_odd = home_win_odds.loc[id_str]['BbAvH']
+        odds.append(home_win_odd)
 
         # If algo thinks home team will win
         if pred == 1:
@@ -97,28 +71,34 @@ def get_profit_multipliers(y, predictions, id_strings, home_win_odds):
             profit_m = 0
             profits_multipliers.append(profit_m)
 
-    return profits_multipliers
+    return profits_multipliers,odds
 
 VALIDATION_FILEPATH = 'data/ML/E0_ML_n3_date_valid.csv'
 MODEL_FILES = {1: 'model_part_1.p',
                2: 'model_part_2.p',
                3: 'model_part_3.p',
-               4: 'model_part_4.p'}
+               4: 'model_part_4.p',
+               5: 'model_part_5.p'}
 
 STANDARDISER_FILES = {1: 'standardiser_part_1.p',
                       2: 'standardiser_part_2.p',
                       3: 'standardiser_part_3.p',
-                      4: 'standardiser_part_4.p'}
+                      4: 'standardiser_part_4.p',
+                      5: 'standardiser_part_5.p'}
 
-VALID_DATES = {1: {'min_month': 8, 'max_month': 10},
-               2: {'min_month': 11, 'max_month': 12},
-               3: {'min_month': 1, 'max_month': 2},
-               4: {'min_month': 3, 'max_month': 5}}
+FEATURES_FILES = {1: 'features_part_1.p',
+                  2: 'features_part_2.p',
+                  3: 'features_part_3.p',
+                  4: 'features_part_4.p',
+                  5: 'features_part_5.p',}
 
-FEATURES_TO_KEEP = {1: ['h_season_wages', 'diff_nb_defeats', 'diff_season_wages'],
-                    2: ['h_nb_goals_scored', 'h_nb_goals_diff', 'h_nb_games', 'h_nb_games_home', 'h_nb_goals_conceded_home', 'h_diff_goals_home', 'h_last_n_games_points_home', 'h_mean_nb_goals_scored_home', 'h_mean_nb_goals_conceded_home', 'h_season_wages', 'a_nb_goals_conceded', 'a_nb_goals_diff', 'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away', 'a_season_wages', 'Month', 'Week', 'distance_km'],
-                    3: ['h_nb_goals_diff', 'a_season_wages'],
-                    4: ['h_nb_goals_diff', 'a_nb_goals_scored', 'a_nb_goals_diff']}
+VALID_DATES = {1: {'min_month': 8, 'max_month': 8},
+                2: {'min_month': 9, 'max_month': 10},
+                3: {'min_month': 11, 'max_month': 12},
+                4: {'min_month': 1, 'max_month': 2},
+                5: {'min_month': 3, 'max_month': 5}}
+
+
 
 ODDS_FILEPATH = 'data/ML/E0_home_win_odds_valid.csv'
 PROBA_THRESH = 0.5
@@ -141,11 +121,12 @@ if __name__ == '__main__':
             y = data['home_win'].values
             data = data.drop('home_win', 1)
 
-            data = data[FEATURES_TO_KEEP[part_i]]
+            features_file = open(FEATURES_FILES[part_i], 'rb')
+            features = pickle.load(features_file)
+            data = data[features]
 
             # for feat in FEATURES_LOG:
             # data[feat] = data[feat].apply(lambda x: np.log10(1+x))
-            features = data.columns
             X = data.values
 
             stdardiser_file = open(STANDARDISER_FILES[part_i], 'rb')
@@ -168,7 +149,7 @@ if __name__ == '__main__':
             prec = precision_score(y, predictions)
             recall = recall_score(y, predictions)
 
-            profits_multipliers = get_profit_multipliers(y, predictions,
+            profits_multipliers,odds = get_profit_multipliers(y, predictions,
                                                          id_str, data_odds)
 
             print('Part %d' % part_i)
@@ -194,7 +175,13 @@ if __name__ == '__main__':
 
             profit_over_time = profit_over_time.resample('D').mean()
             profit_over_time = profit_over_time.fillna(method='ffill')
-            print(profit_over_time)
+            
             profit_over_time.plot()
+            profit_and_proba_over_time = pd.DataFrame({'cumulated_profits': cumulated_profits,
+                                             'odds':odds, 
+                                             'proba': proba_home_win,
+                                             'result': y})
+            print(profit_and_proba_over_time)
+            profit_and_proba_over_time.plot.scatter(x='odds',y='proba',c='result',colormap='coolwarm')
 
         plt.show()
