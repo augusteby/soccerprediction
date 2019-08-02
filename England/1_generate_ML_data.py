@@ -7,25 +7,8 @@ Created on Wed Apr  5 22:12:07 2017
 import pandas as pd
 import os
 from tqdm import tqdm
-
-# constants
-FEAT_TO_KEEP_FOR_ML = [
-    # Home Team Features
-    'h_nb_victories_total', 'h_nb_draws_total', 'h_season_points', 'h_nb_games_total',
-    'h_nb_games_home', 'h_nb_victories_home', 'h_nb_draws_home', 'h_nb_defeats_home',
-    'h_nb_goals_scored_home', 'h_mean_nb_goals_scored_home',
-    'h_nb_goals_conceded_home', 'h_mean_nb_goals_conceded_home',
-    'h_last_n_games_points_home',
-    
-    # Away Team Features
-    'a_nb_victories_total', 'a_nb_draws_total', 'a_season_points', 'a_nb_games_total',
-    'a_nb_games_away', 'a_nb_victories_away', 'a_nb_draws_away', 'a_nb_defeats_away',
-    'a_nb_goals_scored_away', 'a_mean_nb_goals_scored_away',
-    'a_nb_goals_conceded_away', 'a_mean_nb_goals_conceded_away',
-    'a_last_n_games_points',
-
-    # Label
-    'home_win']
+from constants import (TRAINING_FOLDER, TESTING_FOLDER, WAGES_FOLDER,
+                       ML_FOLDER, N, FEAT_TO_KEEP_FOR_ML)
 
 
 def get_season_str(filename):
@@ -254,42 +237,44 @@ def generate_results_awayteam_current_season(team_name, current_date,
     selected_results['a_last_n_games_points'] = results_away['last_n_games_away_points']
 
     return selected_results
-    
 
 
-# parameters    
-DATA_FOLDER = 'data'
-GAMES_FOLDER = DATA_FOLDER + '/Games'
-WAGES_FOLDER = DATA_FOLDER + '/Wages'
-ML_FOLDER = DATA_FOLDER + '/ML'
-N = 3 # number of previous games to consider
+DATA_TYPES = {'training': {'folder': TRAINING_FOLDER, 'data_table': pd.DataFrame()},
+              'testing': {'folder': TESTING_FOLDER, 'data_table': pd.DataFrame()}}
+
 if __name__=='__main__':
-    all_data = pd.DataFrame()
-    
-    for filename in tqdm(os.listdir(GAMES_FOLDER)):
-        print(filename)
-        season_str = get_season_str(filename)
-        filepath = GAMES_FOLDER + '/' + filename
-        one_season = pd.read_csv(filepath)
-        
-        wages_filepath = WAGES_FOLDER + '/' + season_str + '.csv'
-        data_wages_season = pd.read_csv(wages_filepath)
-        
-        # convert dates from string to datetime
-        one_season['Date'] = pd.to_datetime(one_season.Date)
-        
-        # generate the features of each game of the season
-        one_season = generate_all_season_games_features(one_season, 
-                                                        data_wages_season,
-                                                        n=N)
-        one_season['home_win']=one_season['FTR'].apply(lambda x: 1 if x=='H' else 0)
+    training_data = pd.DataFrame()
+    testing_data = pd.DataFrame()
 
-        # add current season to all data
-        all_data = pd.concat([all_data, one_season])
-        
-    # sort all data by date
-    all_data = all_data.sort_values(by='Date')
-    division = all_data['Div'].values[0]
-    all_data_ML = all_data[FEAT_TO_KEEP_FOR_ML]
-    filepath_ML = ML_FOLDER + '/' + division + '_ML.csv'
-    all_data_ML.to_csv(filepath_ML, index=False)
+    for data_type in DATA_TYPES:
+        print('TYPE: {}'.format(data_type))
+        folder = DATA_TYPES[data_type]['folder']
+        data_table = DATA_TYPES[data_type]['data_table']
+        for filename in tqdm(os.listdir(folder)):
+            print('File: {}'.format(filename))
+
+            season_str = get_season_str(filename)
+            filepath = folder + '/' + filename
+            one_season = pd.read_csv(filepath)
+
+            wages_filepath = WAGES_FOLDER + '/' + season_str + '.csv'
+            data_wages_season = pd.read_csv(wages_filepath)
+
+            # convert dates from string to datetime
+            one_season['Date'] = pd.to_datetime(one_season.Date)
+
+            # generate the features of each game of the season
+            one_season = generate_all_season_games_features(one_season,
+                                                            data_wages_season,
+                                                            n=N)
+            one_season['home_win'] = one_season['FTR'].apply(lambda x: 1 if x=='H' else 0)
+
+            # add current season to all data
+            data_table = pd.concat([data_table, one_season])
+
+        # sort all data by date
+        data_table = data_table.sort_values(by='Date')
+        division = data_table['Div'].values[0]
+        data_table_ML = data_table[FEAT_TO_KEEP_FOR_ML]
+        filepath_ML = ML_FOLDER + '/' + data_type + '_' + division + '_ML.csv'
+        data_table_ML.to_csv(filepath_ML, index=False)

@@ -5,18 +5,15 @@ Created on Sun Apr  9 14:17:06 2017
 @author: AUGUSTE
 """
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
 
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import roc_auc_score, roc_curve, make_scorer
+from sklearn.metrics import roc_auc_score, roc_curve, make_scorer, precision_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.gaussian_process import GaussianProcessClassifier
 from xgboost.sklearn import XGBClassifier
 
 FILEPATH = 'data/ML/E0_ML.csv'
@@ -52,7 +49,7 @@ if __name__=='__main__':
     for algo in tqdm(ALGOS):
         classifier = ALGOS[algo]
         
-        score = make_scorer(roc_auc_score)
+        score = make_scorer(precision_score)
         grid_search = GridSearchCV(classifier, param_grid=PARAM_GRID[algo], 
                                    scoring=score, n_jobs=-1, cv=4)
         grid_search.fit(X, y)
