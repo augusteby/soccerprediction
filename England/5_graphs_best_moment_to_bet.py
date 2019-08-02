@@ -7,6 +7,13 @@ Created on Fri Apr 14 13:58:09 2017
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+import matplotlib
+
+# Use TkAgg backend with matplotlib because the backend by default might cause the following issue:
+# https://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python
+# More info here: https://matplotlib.org/faq/usage_faq.html
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -25,7 +32,7 @@ if __name__=='__main__':
     AUCs1 = []
     AUCs2 = []
     nb_games_played_list = range(max_nb_games_played)
-    for nb_games_played in nb_games_played_list:
+    for nb_games_played in tqdm(nb_games_played_list):
         
         sub_data1 = data[data['h_nb_games_total']>=nb_games_played]
         sub_data2 = data[data['h_nb_games_total']==nb_games_played]
@@ -42,7 +49,7 @@ if __name__=='__main__':
         X1 = standardizer.fit_transform(X1)
         X2 = standardizer.fit_transform(X2)
         
-        classifier = LogisticRegression()
+        classifier = LogisticRegression(solver='lbfgs', max_iter=500, C=0.01)
         proba1 = cross_val_predict(classifier, X1, y1, method='predict_proba', cv=10)
         proba_home_win1 = [e[1] for e in proba1]
         predictions1 = [1 if p[1]>0.5 else 0 for p in proba1]
@@ -71,7 +78,3 @@ if __name__=='__main__':
     plt.title('At which days of the season should I bet?')
     
     plt.show()
-        
-       
-        
-        
