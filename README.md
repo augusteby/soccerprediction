@@ -47,7 +47,7 @@ Few definitions:
 
 We absolutely want to minimise the number of FP. Indeed, if the model tells us that we should bet on the
 winning team, we don't want it to be wrong, otherwise it means that we are losing money. 
-FN are fine since we won't lose money because of them. Obviously if we would prefer a model that has
+FN are fine since we won't lose money because of them. Obviously we would prefer a model that has
 both low FN and low FP.
 
 From the previous definitions, we can define the following metrics:

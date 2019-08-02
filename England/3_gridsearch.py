@@ -16,7 +16,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from xgboost.sklearn import XGBClassifier
 
-FILEPATH = 'data/ML/E0_ML.csv'
+TRAINING_DATA_FILEPATH = 'data/ML/training_E0_ML.csv'
+TESTING_DATA_FILEPATH = 'data/ML/testing_E0_ML.csv'
 
 ML_ALGO = 'gauss_proc'
 ALGOS = {'rdmf': RandomForestClassifier(),
@@ -36,7 +37,7 @@ PARAM_GRID = {'rdmf': {'min_samples_leaf': [5, 10, 20, 40, 80],
               'xgb': {'max_depth': [2, 3, 4, 5],
                       'learning_rate': [0.1, 0.2, 0.3, 0.4]}}
 if __name__=='__main__':
-    data = pd.read_csv(FILEPATH)
+    data = pd.read_csv(TRAINING_DATA_FILEPATH)
     
     y = data['home_win'].values
     data = data.drop('home_win', 1)
