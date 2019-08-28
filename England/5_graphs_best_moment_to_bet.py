@@ -16,65 +16,72 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.model_selection import cross_val_predict
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, \
+    roc_curve, precision_recall_curve, confusion_matrix
 
-FILEPATH = 'data/ML/E0_ML.csv'
+from constants import LABEL
+from data_ingestor import load_X_y
+
+TRAINING_DATA_FILEPATH = 'data/ML/training_E0_ML.csv'
+TESTING_DATA_FILEPATH = 'data/ML/testing_E0_ML.csv'
 
 if __name__=='__main__':
-    data = pd.read_csv(FILEPATH)
+    X_train, y_train, features = load_X_y(TRAINING_DATA_FILEPATH)
+
+    # Normalise based on mean and variance of variables in training data
+    standardizer = StandardScaler()
+    X_train = standardizer.fit_transform(X_train)
+
+    classifier = SVC(C=0.1, gamma=0.001)
+    classifier.fit(X_train, y_train)
+
+    data_test = pd.read_csv(TESTING_DATA_FILEPATH)
+    y = data_test[LABEL].values
+
+    max_nb_games_played = int(np.max(data_test['h_nb_games_total'].values))
     
-    max_nb_games_played = int(np.max(data['h_nb_games_total'].values))
-    
-    AUCs1 = []
-    AUCs2 = []
+    prec1 = []
+    prec2 = []
     nb_games_played_list = range(max_nb_games_played)
     for nb_games_played in tqdm(nb_games_played_list):
         
-        sub_data1 = data[data['h_nb_games_total']>=nb_games_played]
-        sub_data2 = data[data['h_nb_games_total']==nb_games_played]
+        sub_data1 = data_test[data_test['h_nb_games_total']>=nb_games_played]
+        sub_data2 = data_test[data_test['h_nb_games_total']==nb_games_played]
     
-        y1 = sub_data1['home_win'].values
-        sub_data1 = sub_data1.drop('home_win',1)
-        y2 = sub_data2['home_win'].values
-        sub_data2 = sub_data2.drop('home_win',1)
+        y1 = sub_data1[LABEL].values
+        sub_data1 = sub_data1.drop(LABEL, 1)
+        y2 = sub_data2[LABEL].values
+        sub_data2 = sub_data2.drop(LABEL, 1)
         
         X1 = sub_data1.values
         X2 = sub_data2.values
-                     
-        standardizer = StandardScaler()
-        X1 = standardizer.fit_transform(X1)
-        X2 = standardizer.fit_transform(X2)
-        
-        classifier = LogisticRegression(solver='lbfgs', max_iter=500, C=0.01)
-        proba1 = cross_val_predict(classifier, X1, y1, method='predict_proba', cv=10)
-        proba_home_win1 = [e[1] for e in proba1]
-        predictions1 = [1 if p[1]>0.5 else 0 for p in proba1]
-        proba2 = cross_val_predict(classifier, X2, y2, method='predict_proba', cv=10)
-        proba_home_win2 = [e[1] for e in proba2]
-        predictions2 = [1 if p[1]>0.5 else 0 for p in proba2]
-        
+
+        X1 = standardizer.transform(X1)
+        X2 = standardizer.transform(X2)
+
+        predictions1 = classifier.predict(X1)
+        predictions2 = classifier.predict(X2)
+
         acc1 = accuracy_score(y1, predictions1)
         acc2 = accuracy_score(y2, predictions2)
-        
-        auc1 = roc_auc_score(y1, proba_home_win1)
-        AUCs1.append(auc1)
-        auc2 = roc_auc_score(y2, proba_home_win2)
-        AUCs2.append(auc2)
-        
+
+        prec1.append(precision_score(y1, predictions1))
+        prec2.append(precision_score(y2, predictions2))
+
+        # recall_score(y1, predictions1)
+        # recall_score(y2, predictions2)
+
     plt.figure()  
-    plt.plot(nb_games_played_list, AUCs1)
-    plt.xlabel('Minimum number of games played in season')
-    plt.ylabel('AUC')
+    plt.plot(nb_games_played_list, prec1)
+    plt.xlabel('Minimum number of games played in season by home team')
+    plt.ylabel('Precision')
     plt.title('At which point of the season should I start betting?')
     
     plt.figure()
-    plt.plot(nb_games_played_list, AUCs2)
-    plt.xlabel('Number of games played in season')
-    plt.ylabel('AUC')
+    plt.plot(nb_games_played_list, prec2)
+    plt.xlabel('Exact number of games played in season by home team')
+    plt.ylabel('Precision')
     plt.title('At which days of the season should I bet?')
     
     plt.show()

@@ -9,6 +9,7 @@ import os
 from tqdm import tqdm
 from constants import (TRAINING_FOLDER, TESTING_FOLDER, WAGES_FOLDER,
                        ML_FOLDER, N, FEAT_TO_KEEP_FOR_ML)
+import time
 
 
 def get_season_str(filename):
@@ -242,7 +243,11 @@ def generate_results_awayteam_current_season(team_name, current_date,
 DATA_TYPES = {'training': {'folder': TRAINING_FOLDER, 'data_table': pd.DataFrame()},
               'testing': {'folder': TESTING_FOLDER, 'data_table': pd.DataFrame()}}
 
+#TODO: remove commented line below
+# DATA_TYPES = {'testing': {'folder': TESTING_FOLDER, 'data_table': pd.DataFrame()}}
+
 if __name__=='__main__':
+    start_time = time.time()
     training_data = pd.DataFrame()
     testing_data = pd.DataFrame()
 
@@ -261,7 +266,21 @@ if __name__=='__main__':
             data_wages_season = pd.read_csv(wages_filepath)
 
             # convert dates from string to datetime
-            one_season['Date'] = pd.to_datetime(one_season.Date)
+            # print(one_season['Date'].head(80))
+            try:
+
+                one_season['Date'] = pd.to_datetime(one_season.Date,
+                                                    format='%d/%m/%Y')
+                # print('YOLO')
+            except:
+
+                one_season['Date'] = pd.to_datetime(one_season.Date,
+                                                    format='%d/%m/%y')
+                # print('HELLO')
+
+            # print(one_season['Date'].head(80))
+            # import sys
+            # sys.exit()
 
             # generate the features of each game of the season
             one_season = generate_all_season_games_features(one_season,
@@ -271,6 +290,11 @@ if __name__=='__main__':
 
             # add current season to all data
             data_table = pd.concat([data_table, one_season])
+
+        elapsed_time = time.time() - start_time
+        print('---------------- Elapsed time : {} ----------------\n'.format(elapsed_time))
+        import sys
+        sys.exit()
 
         # sort all data by date
         data_table = data_table.sort_values(by='Date')

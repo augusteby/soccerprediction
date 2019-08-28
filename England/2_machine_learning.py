@@ -4,8 +4,7 @@ Created on Sat Apr  8 21:17:04 2017
 
 @author: AUGUSTE
 """
-import operator
-import pandas as pd
+import numpy as np
 import matplotlib
 
 # Use TkAgg backend with matplotlib because the backend by default might cause the following issue:
@@ -16,59 +15,94 @@ import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.model_selection import cross_val_predict
+from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve
-TRAINING_FILEPATH = 'data/ML/training_E0_ML.csv'
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             roc_auc_score, roc_curve, precision_recall_curve, confusion_matrix)
 
-RDMF = False
+from data_ingestor import load_X_y
+
+TRAINING_DATA_FILEPATH = 'data/ML/training_E0_ML.csv'
+TESTING_DATA_FILEPATH = 'data/ML/testing_E0_ML.csv'
+
+ALGO = 'svm'
 if __name__=='__main__':
-    data = pd.read_csv(TRAINING_FILEPATH)
+    X_train, y_train, features = load_X_y(TRAINING_DATA_FILEPATH)
+    X_test, y_test, _ = load_X_y(TESTING_DATA_FILEPATH)
 
-    y = data['home_win'].values
-    data = data.drop('home_win', 1)
-
-    features = data.columns
-    X = data.values
-                 
+    # Normalise based on mean and variance of variables in training data
     standardizer = StandardScaler()
-    X = standardizer.fit_transform(X)
-    
-    if RDMF:
+    X_train = standardizer.fit_transform(X_train)
+    X_test = standardizer.transform(X_test)
+
+    if ALGO == 'rdmf':
         classifier = RandomForestClassifier(n_estimators=50, max_features=0.2, min_samples_leaf=20)
+    elif ALGO == 'svm':
+        classifier = SVC(C=0.1, gamma=0.001)
+        # classifier = SVC(C=0.1, gamma=0.01, kernel='poly', degree=3, tol=0.001)
     else:
         classifier = LogisticRegression(C=0.01)
-    proba = cross_val_predict(classifier, X, y, method='predict_proba', cv=5)
-    proba_home_win = [e[1] for e in proba]
-    predictions = [1 if p[1] > 0.478694 else 0 for p in proba]
-    
-    acc = accuracy_score(y, predictions)
-    
-    auc = roc_auc_score(y, proba_home_win)
-    fpr, tpr, thresholds = roc_curve(y, proba_home_win, pos_label=1)
-    
-    tnr_plus_tpr = [0.7*(1-fpr[i])+0.3*tpr[i] for i in range(len(fpr))]
-    index_max, max_tnr_plus_tpr = max(enumerate(tnr_plus_tpr), key=operator.itemgetter(1))
-    thresholds_of_max = thresholds[index_max]
-    
-    print('Accuracy: %f' % acc)
-    print('Max tnrr + tpr: %f' % max_tnr_plus_tpr)
-    print('tnr @ max: %f' % (1-fpr[index_max]))
-    print('tpr @ max: %f' % tpr[index_max])
-    print('Threshold of max fpr + tnr: %f' % thresholds_of_max)
-    print('Area under the curve: %f' % auc)
-    plt.plot(fpr, tpr)
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC curve')
-    plt.show()
-    
-    if RDMF:
-        classifier.fit(X, y)
+
+    if ALGO == 'svm':
+        classifier.fit(X_train, y_train)
+        predictions = classifier.predict(X_test)
+
+        print('What are the metrics with probability==FALSE')
+        print('Accuracy: {}'.format(accuracy_score(y_test, predictions)))
+        print('Precision: {}'.format(precision_score(y_test, predictions)))
+        print('Recall: {}'.format(recall_score(y_test, predictions)))
+        print(confusion_matrix(y_test, predictions))
+        print('')
+    else:
+        classifier.fit(X_train, y_train)
+        probas = classifier.predict_proba(X_test)
+        proba_home_win = [p[1] for p in probas]
+
+        auc = roc_auc_score(y_test, proba_home_win)
+        fpr, tpr, thresholds = roc_curve(y_test, proba_home_win, pos_label=1)
+
+        print('What is the Area under the ROC curve?')
+        print('AUROC: {}'.format(auc))
+        print('')
+
+        print('What are the metrics for a threshold of 0.5')
+        predictions = [1 if prob[1] >= 0.5 else 0 for prob in probas]
+        print('Accuracy @ thresh 0.5: {}'.format(accuracy_score(y_test, predictions)))
+        print('Precision @ thresh 0.5: {}'.format(precision_score(y_test, predictions)))
+        print('Recall @ thresh 0.5: {}'.format(recall_score(y_test, predictions)))
+        print(confusion_matrix(y_test, predictions))
+        print('')
+
+        print('What is the threshold @ maximum precision?')
+        precisions, recalls, thresh_prec_rec = precision_recall_curve(y_test, proba_home_win)
+        precisions = precisions[:-1]
+        recalls = recalls[:-1]
+        idx_max_precision = np.argmax(precisions)
+        thresh_max_precision = thresh_prec_rec[idx_max_precision]
+        print('Thresh @ Highest Precision: {}'.format(thresh_max_precision))
+        print('')
+
+        print('What are the metrics for the threshold @ maximum precision?')
+        predictions_max_prec = [1 if prob[1] >= thresh_max_precision else 0 for prob in probas]
+        print(
+            'Accuracy @ Highest Precision: {}'.format(accuracy_score(y_test, predictions_max_prec)))
+        print('Highest Precision: {}'.format(precision_score(y_test, predictions_max_prec)))
+        print('Recall @ Highest Precision: {}'.format(recall_score(y_test, predictions_max_prec)))
+        print(confusion_matrix(y_test, predictions_max_prec))
+        print('')
+
+        plt.plot(fpr, tpr)
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC curve')
+        plt.show()
+
+    if ALGO == 'rdmf':
         print(features)
         print(classifier.feature_importances_)
+    elif ALGO == 'svm':
+        pass
     else:
-        classifier.fit(X, y)
         for i in range(len(features)):
             print(features[i])
             print(classifier.coef_[0][i])

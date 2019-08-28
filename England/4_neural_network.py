@@ -154,6 +154,8 @@ if __name__=='__main__':
 
     print('What is the threshold @ maximum precision?')
     precisions, recalls, thresh_prec_rec = precision_recall_curve(y_test, probas)
+    precisions = precisions[:-1]
+    recalls = recalls[:-1]
     idx_max_precision = np.argmax(precisions)
     thresh_max_precision = thresh_prec_rec[idx_max_precision]
     print('Thresh @ Highest Precision: {}'.format(thresh_max_precision))
@@ -170,9 +172,9 @@ if __name__=='__main__':
     print(len(y_test))
     print([i for i in range(len(predictions_max_prec)) if predictions_max_prec[i]==1])
 
-    # fpr, tpr, thresholds = roc_curve(y_test, probas)
-    # plt.plot(fpr, tpr)
-    # plt.show()
+    fpr, tpr, thresholds = roc_curve(y_test, probas)
+    plt.plot(fpr, tpr)
+    plt.show()
 
 
 
